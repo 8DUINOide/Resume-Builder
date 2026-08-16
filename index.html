@@ -5,12 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resume Builder - Shop</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script>
-        window.APP_FIREBASE_CONFIG = {{ firebase_config | tojson | safe }};
-    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body {
             background: #f2f3f5;
@@ -99,53 +95,13 @@
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center">
-    <header class="fixresume-header sticky top-0 z-30">
-        <div class="app-shell flex items-center justify-between py-3">
-            <div id="auth-section" class="flex items-center space-x-3">
-                <button id="login-btn" class="flex items-center px-5 py-2 border border-gray-300 rounded-xl text-sm font-semibold hover:bg-gray-50 transition bg-white text-gray-700">
-                    <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                    </svg>
-                    Sign in
-                </button>
-                <div id="user-info" class="hidden items-center space-x-3">
-                    <img id="user-photo" src="" alt="User" class="w-9 h-9 rounded-full border border-slate-200">
-                    <div class="text-left">
-                        <div id="user-name" class="text-sm font-semibold text-slate-800"></div>
-                        <div id="user-role" class="text-[10px] uppercase tracking-wide text-slate-500"></div>
-                    </div>
-                    <button id="logout-btn" class="text-slate-600 hover:text-slate-800 text-sm font-medium">Logout</button>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <!-- Navigation Tabs -->
-    <nav id="nav-tabs" class="hidden bg-white shadow-sm border-b">
-        <div class="container mx-auto px-4">
-            <div class="flex space-x-8">
-                <button id="tab-builder" class="py-4 px-2 border-b-2 border-purple-600 text-purple-600 font-semibold">
-                    Resume Builder
-                </button>
-                <button id="tab-dashboard" class="py-4 px-2 border-b-2 border-transparent text-gray-600 hover:text-purple-600 transition">
-                    My Dashboard
-                </button>
-                <button id="tab-admin" class="hidden py-4 px-2 border-b-2 border-transparent text-gray-600 hover:text-purple-600 transition">
-                    Admin Panel
-                </button>
-            </div>
-        </div>
-    </nav>
 
     <!-- Main Content -->
     <main class="app-shell">
         <div id="login-prompt" class="text-center py-20">
             <div class="max-w-md mx-auto bg-white rounded-3xl shadow-md p-10 border border-slate-200">
                 <div class="w-24 h-24 flex items-center justify-center mx-auto mb-6">
-                    <img src="/static/artex icon.jpg" alt="Artex Icon" class="w-24 h-24 object-contain">
+                    <img src="static/artex icon.jpg" alt="Artex Icon" class="w-24 h-24 object-contain">
                 </div>
                 <h2 class="text-3xl font-bold text-slate-800 mb-4">Build your dream resume</h2>
                 <p class="text-slate-600 mb-8">Sign in to create polished, ATS-friendly resumes with live preview and auto-save.</p>
@@ -156,7 +112,7 @@
                         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                     </svg>
-                    Sign in with Google
+                    Get Started
                 </button>
             </div>
         </div>
@@ -303,7 +259,7 @@
                         <div class="flex justify-between mt-8 pt-4 border-t border-slate-200">
                             <button id="prev-btn" class="hidden px-6 py-3 border border-violet-300 text-violet-700 rounded-xl font-semibold bg-violet-50">Previous</button>
                             <button id="next-btn" class="ml-auto px-6 py-3 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-700 transition">Next</button>
-                            <button id="submit-btn" class="hidden ml-auto px-6 py-3 bg-violet-600 text-white rounded-xl font-semibold hover:bg-violet-500 transition">Submit Shop Order</button>
+                            <button id="submit-btn" class="hidden ml-auto px-6 py-3 bg-violet-600 text-white rounded-xl font-semibold hover:bg-violet-500 transition">Download PDF</button>
                         </div>
                     </div>
 
@@ -352,123 +308,8 @@
                 </div>
             </div>
         </div>
-
-        <div id="dashboard-section" class="hidden">
-            <div class="max-w-4xl mx-auto">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">My Dashboard</h2>
-                <div id="order-status-card" class="bg-white rounded-xl shadow-lg p-6 mb-6 hidden">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-800">Current Order</h3>
-                            <p id="order-ref-id" class="text-purple-600 font-bold"></p>
-                        </div>
-                        <span id="order-status" class="px-3 py-1 rounded-full text-sm font-semibold"></span>
-                    </div>
-                    <div id="order-actions" class="flex space-x-4"></div>
-                </div>
-                <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Daily Edit Limit</h3>
-                    <div class="flex items-center space-x-4">
-                        <div class="flex-1 bg-gray-200 rounded-full h-4">
-                            <div id="edit-progress" class="bg-purple-600 h-4 rounded-full transition-all" style="width: 0%"></div>
-                        </div>
-                        <span id="edit-count" class="text-sm font-semibold text-gray-600">0/5</span>
-                    </div>
-                    <p class="text-sm text-gray-500 mt-2">You can edit your resume up to 5 times per day.</p>
-                </div>
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Orders</h3>
-                    <div id="recent-orders" class="space-y-4"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="admin-section" class="hidden">
-            <div class="max-w-6xl mx-auto">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">Admin Dashboard</h2>
-                <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-                    <div class="flex flex-wrap gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Date Filter</label>
-                            <input type="date" id="admin-date-filter" class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Search Ref ID</label>
-                            <input type="text" id="admin-search" class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="REF-...">
-                        </div>
-                        <div class="flex items-end">
-                            <button id="admin-search-btn" class="px-6 py-2 gradient-bg text-white rounded-lg hover:opacity-90 transition">
-                                Search
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Orders</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead>
-                                <tr class="border-b">
-                                    <th class="text-left py-3 px-4">Ref ID</th>
-                                    <th class="text-left py-3 px-4">Customer</th>
-                                    <th class="text-left py-3 px-4">Template</th>
-                                    <th class="text-left py-3 px-4">Status</th>
-                                    <th class="text-left py-3 px-4">Created</th>
-                                    <th class="text-left py-3 px-4">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="admin-orders-table"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4 relative">
-                <button id="close-modal-x" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-                <div class="text-center">
-                    <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-2xl font-bold text-gray-800 mb-2">Order Submitted!</h3>
-                    <p class="text-gray-600 mb-4">Your resume order has been submitted successfully.</p>
-                    <div class="bg-gray-100 rounded-lg p-4 mb-4">
-                        <p class="text-sm text-gray-600 mb-2">Your Reference ID:</p>
-                        <p id="modal-ref-id" class="text-2xl font-bold text-purple-600"></p>
-                    </div>
-                    <div id="qrcode" class="flex justify-center mb-4"></div>
-                    <p class="text-sm text-gray-500 mb-6">Show this QR code or reference ID at the shop.</p>
-                    <button id="close-modal" class="w-full px-6 py-3 gradient-bg text-white rounded-lg font-semibold hover:opacity-90 transition">Done</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="admin-edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white rounded-xl p-8 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-2xl font-bold text-gray-800">Edit Resume</h3>
-                    <button id="close-admin-modal" class="text-gray-500 hover:text-gray-700">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                </div>
-                <div id="admin-edit-content"></div>
-                <div class="flex justify-end space-x-4 mt-6">
-                    <button id="cancel-admin-edit" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">Cancel</button>
-                    <button id="save-admin-edit" class="px-6 py-2 gradient-bg text-white rounded-lg hover:opacity-90 transition">Save Changes</button>
-                </div>
-            </div>
-        </div>
     </main>
 
-    <script src="/static/js/app.js"></script>
+    <script src="static/js/app.js"></script>
 </body>
 </html>

@@ -1,43 +1,4 @@
-const firebaseConfig = window.APP_FIREBASE_CONFIG && Object.keys(window.APP_FIREBASE_CONFIG).length
-    ? window.APP_FIREBASE_CONFIG
-    : {
-        apiKey: "",
-        authDomain: "",
-        projectId: "",
-        storageBucket: "",
-        messagingSenderId: "",
-        appId: "",
-        measurementId: ""
-    };
-
-const firebaseConfigMissing = !firebaseConfig.apiKey || !firebaseConfig.projectId;
-if (firebaseConfigMissing) {
-    console.warn('Firebase config is missing. Sign-in will fail until the app is configured with a valid FIREBASE_API_KEY and project settings.');
-}
-
-// Initialize Firebase
-if (firebase.apps && firebase.apps.length === 0 && !firebaseConfigMissing) {
-    firebase.initializeApp(firebaseConfig);
-}
-const auth = firebase.auth();
-
-if (firebaseConfigMissing) {
-    const warning = document.getElementById('firebase-warning');
-    if (warning) {
-        warning.classList.remove('hidden');
-        warning.textContent = 'Firebase is not configured correctly. Add the valid web API key and project settings to the environment before using Google Sign-In.';
-    }
-    const signInButtons = document.querySelectorAll('#login-btn, #main-login-btn');
-    signInButtons.forEach(button => {
-        button.disabled = true;
-        button.title = 'Missing Firebase configuration';
-        button.classList.add('opacity-50', 'cursor-not-allowed');
-    });
-}
-
 // Global state
-let currentUser = null;
-let userRole = 'CUSTOMER';
 let currentStep = 1;
 let selectedTemplate = 'ats_classic';
 let resumeData = {
@@ -49,142 +10,18 @@ let resumeData = {
     projects: []
 };
 let autoSaveTimeout = null;
-let currentOrderId = null;
 
 // DOM Elements
 const loginPrompt = document.getElementById('login-prompt');
 const builderSection = document.getElementById('builder-section');
-const dashboardSection = document.getElementById('dashboard-section');
-const adminSection = document.getElementById('admin-section');
-const navTabs = document.getElementById('nav-tabs');
-const authSection = document.getElementById('auth-section');
-const loginBtn = document.getElementById('login-btn');
 const mainLoginBtn = document.getElementById('main-login-btn');
-const userInfo = document.getElementById('user-info');
-const userPhoto = document.getElementById('user-photo');
-const userName = document.getElementById('user-name');
-const userRoleSpan = document.getElementById('user-role');
-const logoutBtn = document.getElementById('logout-btn');
 
-// Auth State Observer
-auth.onAuthStateChanged(async (user) => {
-    if (user) {
-        currentUser = user;
-        userPhoto.src = user.photoURL || '';
-        userName.textContent = user.displayName || user.email;
-        
-        // Get user role
-        try {
-            const response = await fetch('/api/user-role', {
-                headers: {
-                    'Authorization': `Bearer ${await user.getIdToken()}`
-                }
-            });
-            const data = await response.json();
-            userRole = data.role || 'CUSTOMER';
-            userRoleSpan.textContent = userRole;
-            
-            // Show admin tab if admin
-            if (userRole === 'ADMIN') {
-                document.getElementById('tab-admin').classList.remove('hidden');
-            }
-        } catch (error) {
-            console.error('Error getting user role:', error);
-        }
-        
-        // Show logged-in UI
-        loginPrompt.classList.add('hidden');
-        authSection.classList.remove('hidden');
-        userInfo.classList.remove('hidden');
-        loginBtn.classList.add('hidden');
-        navTabs.classList.remove('hidden');
-        builderSection.classList.remove('hidden');
-        
-        // Load draft
-        loadDraft();
-    } else {
-        currentUser = null;
-        userRole = 'CUSTOMER';
-        
-        // Show login UI
-        loginPrompt.classList.remove('hidden');
-        authSection.classList.add('hidden');
-        userInfo.classList.add('hidden');
-        loginBtn.classList.remove('hidden');
-        navTabs.classList.add('hidden');
-        builderSection.classList.add('hidden');
-        dashboardSection.classList.add('hidden');
-        adminSection.classList.add('hidden');
-    }
-});
-
-// Google Sign-In
-async function signInWithGoogle() {
-    try {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        const result = await auth.signInWithPopup(provider);
-        console.log('Signed in:', result.user);
-    } catch (error) {
-        console.error('Sign-in error:', error);
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
-        console.error('Error details:', error.details);
-        alert(`Sign-in failed: ${error.message} (Code: ${error.code})`);
-    }
-}
-
-loginBtn.addEventListener('click', signInWithGoogle);
-mainLoginBtn.addEventListener('click', signInWithGoogle);
-
-// Sign Out
-logoutBtn.addEventListener('click', async () => {
-    try {
-        await auth.signOut();
-        console.log('Signed out');
-    } catch (error) {
-        console.error('Sign-out error:', error);
-    }
-});
-
-// Navigation Tabs
-document.getElementById('tab-builder').addEventListener('click', () => {
+// Simple state management - show builder on button click
+mainLoginBtn.addEventListener('click', () => {
+    loginPrompt.classList.add('hidden');
     builderSection.classList.remove('hidden');
-    dashboardSection.classList.add('hidden');
-    adminSection.classList.add('hidden');
-    updateTabStyles('tab-builder');
 });
 
-document.getElementById('tab-dashboard').addEventListener('click', () => {
-    builderSection.classList.add('hidden');
-    dashboardSection.classList.remove('hidden');
-    adminSection.classList.add('hidden');
-    updateTabStyles('tab-dashboard');
-    loadCustomerDashboard();
-});
-
-document.getElementById('tab-admin').addEventListener('click', () => {
-    if (userRole === 'ADMIN') {
-        builderSection.classList.add('hidden');
-        dashboardSection.classList.add('hidden');
-        adminSection.classList.remove('hidden');
-        updateTabStyles('tab-admin');
-        loadAdminDashboard();
-    }
-});
-
-function updateTabStyles(activeTab) {
-    const tabs = ['tab-builder', 'tab-dashboard', 'tab-admin'];
-    tabs.forEach(tab => {
-        const element = document.getElementById(tab);
-        if (tab === activeTab) {
-            element.classList.add('border-purple-600', 'text-purple-600');
-            element.classList.remove('border-transparent', 'text-gray-600');
-        } else {
-            element.classList.remove('border-purple-600', 'text-purple-600');
-            element.classList.add('border-transparent', 'text-gray-600');
-        }
-    });
-}
 
 // Step Navigation
 const prevBtn = document.getElementById('prev-btn');
@@ -253,50 +90,21 @@ function setupAutoSave() {
     });
 }
 
-async function saveDraft() {
-    if (!currentUser) return;
-    
-    try {
-        collectFormData();
-        const idToken = await currentUser.getIdToken();
-        
-        const response = await fetch('/api/save-draft', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                idToken: idToken,
-                draftData: resumeData
-            })
-        });
-        
-        if (response.ok) {
-            showAutoSaveIndicator();
-        }
-    } catch (error) {
-        console.error('Auto-save error:', error);
-    }
+function saveDraft() {
+    collectFormData();
+    localStorage.setItem('resumeDraft', JSON.stringify(resumeData));
+    showAutoSaveIndicator();
 }
 
-async function loadDraft() {
-    if (!currentUser) return;
-    
-    try {
-        const idToken = await currentUser.getIdToken();
-        const response = await fetch('/api/load-draft', {
-            headers: {
-                'Authorization': `Bearer ${idToken}`
-            }
-        });
-        
-        const data = await response.json();
-        if (data.draft && Object.keys(data.draft).length > 0) {
-            resumeData = data.draft;
+function loadDraft() {
+    const savedDraft = localStorage.getItem('resumeDraft');
+    if (savedDraft) {
+        try {
+            resumeData = JSON.parse(savedDraft);
             populateFormData();
+        } catch (error) {
+            console.error('Load draft error:', error);
         }
-    } catch (error) {
-        console.error('Load draft error:', error);
     }
 }
 
@@ -463,25 +271,14 @@ function addProjectField(data = {}) {
 document.getElementById('photo').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (file) {
-        const formData = new FormData();
-        formData.append('photo', file);
-        
-        try {
-            const response = await fetch('/api/upload-photo', {
-                method: 'POST',
-                body: formData
-            });
-            
-            const data = await response.json();
-            if (data.success) {
-                document.getElementById('photo-preview-img').src = data.photoUrl;
-                document.getElementById('photo-preview').classList.remove('hidden');
-                saveDraft();
-            }
-        } catch (error) {
-            console.error('Photo upload error:', error);
-            alert('Photo upload failed. Please try again.');
-        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('photo-preview-img').src = e.target.result;
+            document.getElementById('photo-preview').classList.remove('hidden');
+            resumeData.personalInfo.photoUrl = e.target.result;
+            saveDraft();
+        };
+        reader.readAsDataURL(file);
     }
 });
 
@@ -533,13 +330,8 @@ function collectAllFormData() {
     resumeData.templateType = selectedTemplate;
 }
 
-// Submit Order
+// Submit Order - Generate PDF
 async function submitOrder() {
-    if (!currentUser) {
-        alert('Please sign in to submit your order.');
-        return;
-    }
-    
     collectAllFormData();
     
     // Validation
@@ -554,353 +346,112 @@ async function submitOrder() {
     }
     
     try {
-        const idToken = await currentUser.getIdToken();
-        const response = await fetch('/api/create-order', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                idToken: idToken,
-                templateType: selectedTemplate,
-                resumeData: resumeData
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            currentOrderId = data.orderId;
-            showConfirmationModal(data.refId);
-        } else {
-            alert('Order submission failed: ' + data.error);
-        }
+        await generatePDF();
+        alert('Resume PDF generated successfully!');
     } catch (error) {
-        console.error('Order submission error:', error);
-        alert('Order submission failed. Please try again.');
+        console.error('PDF generation error:', error);
+        alert('PDF generation failed. Please try again.');
     }
 }
 
-function showConfirmationModal(refId) {
-    document.getElementById('modal-ref-id').textContent = refId;
-    document.getElementById('qrcode').innerHTML = '';
-    new QRCode(document.getElementById('qrcode'), {
-        text: refId,
-        width: 128,
-        height: 128
-    });
-    document.getElementById('confirmation-modal').classList.remove('hidden');
-}
-
-document.getElementById('close-modal').addEventListener('click', () => {
-    document.getElementById('confirmation-modal').classList.add('hidden');
-    // Reset form
-    currentStep = 1;
-    updateStepUI();
-    resumeData = {
-        personalInfo: {},
-        summary: '',
-        experience: [],
-        education: [],
-        skills: [],
-        projects: []
-    };
-    document.querySelectorAll('input, textarea').forEach(input => input.value = '');
-    document.getElementById('experience-list').innerHTML = '';
-    document.getElementById('education-list').innerHTML = '';
-    document.getElementById('skills-list').innerHTML = '';
-    document.getElementById('projects-list').innerHTML = '';
-    document.getElementById('photo-preview').classList.add('hidden');
-});
-
-document.getElementById('close-modal-x').addEventListener('click', () => {
-    document.getElementById('confirmation-modal').classList.add('hidden');
-    // Reset form
-    currentStep = 1;
-    updateStepUI();
-    resumeData = {
-        personalInfo: {},
-        summary: '',
-        experience: [],
-        education: [],
-        skills: [],
-        projects: []
-    };
-    document.querySelectorAll('input, textarea').forEach(input => input.value = '');
-    document.getElementById('experience-list').innerHTML = '';
-    document.getElementById('education-list').innerHTML = '';
-    document.getElementById('skills-list').innerHTML = '';
-    document.getElementById('projects-list').innerHTML = '';
-    document.getElementById('photo-preview').classList.add('hidden');
-});
-
-// Customer Dashboard
-async function loadCustomerDashboard() {
-    if (!currentUser) return;
+// PDF Generation Function
+async function generatePDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
     
-    try {
-        const idToken = await currentUser.getIdToken();
+    const data = resumeData;
+    let y = 20;
+    
+    // Title
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text(data.personalInfo.fullName || 'Your Name', 20, y);
+    y += 10;
+    
+    // Contact Info
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    const contactInfo = [
+        data.personalInfo.email || '',
+        data.personalInfo.phone || '',
+        data.personalInfo.location || '',
+        data.personalInfo.linkedin || '',
+        data.personalInfo.website || ''
+    ].filter(Boolean).join(' | ');
+    
+    if (contactInfo) {
+        doc.text(contactInfo, 20, y);
+        y += 15;
+    }
+    
+    // Summary
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Professional Summary', 20, y);
+    y += 8;
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    const summaryLines = doc.splitTextToSize(data.summary || '', 170);
+    doc.text(summaryLines, 20, y);
+    y += Math.max(15, summaryLines.length * 5);
+    
+    // Experience
+    if (data.experience.length > 0) {
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Work Experience', 20, y);
+        y += 8;
         
-        // Get edit count
-        const userResponse = await fetch('/api/user-role', {
-            headers: {
-                'Authorization': `Bearer ${idToken}`
-            }
+        data.experience.forEach(exp => {
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${exp.title} - ${exp.company}`, 20, y);
+            y += 5;
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`${exp.startDate} - ${exp.endDate}`, 20, y);
+            y += 5;
+            const descLines = doc.splitTextToSize(exp.description || '', 170);
+            doc.setFontSize(10);
+            doc.text(descLines, 20, y);
+            y += Math.max(10, descLines.length * 4);
         });
-        const userData = await userResponse.json();
-        
-        // Update edit progress (this would need a separate endpoint to get actual count)
-        document.getElementById('edit-count').textContent = '0/5';
-        document.getElementById('edit-progress').style.width = '0%';
-        
-        // Load recent orders (this would need a customer-specific orders endpoint)
-        document.getElementById('recent-orders').innerHTML = `
-            <p class="text-gray-500">No recent orders found.</p>
-        `;
-        
-    } catch (error) {
-        console.error('Dashboard load error:', error);
     }
-}
-
-// Admin Dashboard
-async function loadAdminDashboard() {
-    if (userRole !== 'ADMIN') return;
     
-    // Set default date to today
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('admin-date-filter').value = today;
-    
-    loadAdminOrders(today);
-}
-
-document.getElementById('admin-search-btn').addEventListener('click', () => {
-    const dateFilter = document.getElementById('admin-date-filter').value;
-    const searchTerm = document.getElementById('admin-search').value;
-    
-    if (searchTerm) {
-        loadAdminOrders(null, searchTerm);
-    } else {
-        loadAdminOrders(dateFilter);
-    }
-});
-
-async function loadAdminOrders(dateFilter = null, refId = null) {
-    if (!currentUser) return;
-    
-    try {
-        const idToken = await currentUser.getIdToken();
-        let url = '/api/orders?';
+    // Education
+    if (data.education.length > 0) {
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Education', 20, y);
+        y += 8;
         
-        if (dateFilter) {
-            url += `date=${dateFilter}`;
-        } else if (refId) {
-            url += `refId=${refId}`;
-        }
-        
-        const response = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${idToken}`
-            }
+        data.education.forEach(edu => {
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${edu.degree} - ${edu.school}`, 20, y);
+            y += 5;
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`${edu.startDate} - ${edu.endDate}`, 20, y);
+            y += 8;
         });
-        
-        const data = await response.json();
-        
-        if (data.orders) {
-            renderAdminOrders(data.orders);
-        }
-    } catch (error) {
-        console.error('Admin orders load error:', error);
-    }
-}
-
-function renderAdminOrders(orders) {
-    const tbody = document.getElementById('admin-orders-table');
-    tbody.innerHTML = '';
-    
-    if (orders.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" class="text-center py-8 text-gray-500">No orders found</td>
-            </tr>
-        `;
-        return;
     }
     
-    orders.forEach(order => {
-        const tr = document.createElement('tr');
-        tr.className = 'border-b hover:bg-gray-50';
-        
-        const statusClass = order.status === 'FULFILLED' ? 'bg-green-100 text-green-800' : 
-                           order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 
-                           'bg-gray-100 text-gray-800';
-        
-        tr.innerHTML = `
-            <td class="py-3 px-4 font-semibold">${order.refId}</td>
-            <td class="py-3 px-4">${order.customerName || order.customerEmail}</td>
-            <td class="py-3 px-4">${order.templateType}</td>
-            <td class="py-3 px-4">
-                <span class="px-2 py-1 rounded-full text-xs font-semibold ${statusClass}">${order.status}</span>
-            </td>
-            <td class="py-3 px-4">${new Date(order.createdAt).toLocaleDateString()}</td>
-            <td class="py-3 px-4">
-                <button class="text-purple-600 hover:text-purple-800 mr-2" onclick="editOrder('${order.orderId}')">Edit</button>
-                ${order.status === 'PENDING' ? `
-                    <button class="text-green-600 hover:text-green-800" onclick="fulfillOrder('${order.orderId}')">Fulfill</button>
-                ` : `
-                    <a href="/api/download-resume/${order.refId}" class="text-blue-600 hover:text-blue-800" target="_blank">Download</a>
-                `}
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-// Admin Edit Order
-let editingOrderId = null;
-
-async function editOrder(orderId) {
-    editingOrderId = orderId;
-    
-    if (!currentUser) return;
-    
-    try {
-        const idToken = await currentUser.getIdToken();
-        const response = await fetch('/api/orders', {
-            headers: {
-                'Authorization': `Bearer ${idToken}`
-            }
-        });
-        
-        const data = await response.json();
-        const order = data.orders.find(o => o.orderId === orderId);
-        
-        if (order) {
-            showAdminEditModal(order);
-        }
-    } catch (error) {
-        console.error('Edit order error:', error);
+    // Skills
+    if (data.skills.length > 0) {
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Skills', 20, y);
+        y += 8;
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        const skillsText = data.skills.map(s => s.name).join(', ');
+        const skillsLines = doc.splitTextToSize(skillsText, 170);
+        doc.text(skillsLines, 20, y);
     }
-}
-
-function showAdminEditModal(order) {
-    const content = document.getElementById('admin-edit-content');
-    const resumeData = order.resumeData;
     
-    content.innerHTML = `
-        <div class="space-y-6">
-            <div>
-                <h4 class="font-semibold mb-2">Personal Information</h4>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm text-gray-600 mb-1">Full Name</label>
-                        <input type="text" id="edit-fullName" class="w-full px-3 py-2 border rounded" value="${resumeData.personalInfo?.fullName || ''}">
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-600 mb-1">Email</label>
-                        <input type="text" id="edit-email" class="w-full px-3 py-2 border rounded" value="${resumeData.personalInfo?.email || ''}">
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-600 mb-1">Phone</label>
-                        <input type="text" id="edit-phone" class="w-full px-3 py-2 border rounded" value="${resumeData.personalInfo?.phone || ''}">
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-600 mb-1">Location</label>
-                        <input type="text" id="edit-location" class="w-full px-3 py-2 border rounded" value="${resumeData.personalInfo?.location || ''}">
-                    </div>
-                </div>
-            </div>
-            <div>
-                <label class="block text-sm text-gray-600 mb-1">Summary</label>
-                <textarea id="edit-summary" class="w-full px-3 py-2 border rounded" rows="4">${resumeData.summary || ''}</textarea>
-            </div>
-        </div>
-    `;
-    
-    document.getElementById('admin-edit-modal').classList.remove('hidden');
-}
-
-document.getElementById('close-admin-modal').addEventListener('click', () => {
-    document.getElementById('admin-edit-modal').classList.add('hidden');
-});
-
-document.getElementById('cancel-admin-edit').addEventListener('click', () => {
-    document.getElementById('admin-edit-modal').classList.add('hidden');
-});
-
-document.getElementById('save-admin-edit').addEventListener('click', async () => {
-    if (!currentUser || !editingOrderId) return;
-    
-    try {
-        const idToken = await currentUser.getIdToken();
-        
-        const updatedData = {
-            personalInfo: {
-                fullName: document.getElementById('edit-fullName').value,
-                email: document.getElementById('edit-email').value,
-                phone: document.getElementById('edit-phone').value,
-                location: document.getElementById('edit-location').value
-            },
-            summary: document.getElementById('edit-summary').value
-        };
-        
-        const response = await fetch('/api/update-resume', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                idToken: idToken,
-                orderId: editingOrderId,
-                resumeData: updatedData
-            })
-        });
-        
-        if (response.ok) {
-            alert('Changes saved successfully');
-            document.getElementById('admin-edit-modal').classList.add('hidden');
-            loadAdminOrders(document.getElementById('admin-date-filter').value);
-        } else {
-            const data = await response.json();
-            alert('Save failed: ' + data.error);
-        }
-    } catch (error) {
-        console.error('Save edit error:', error);
-        alert('Save failed. Please try again.');
-    }
-});
-
-// Fulfill Order
-async function fulfillOrder(orderId) {
-    if (!confirm('Are you sure you want to fulfill this order? This will generate the PDF.')) return;
-    
-    if (!currentUser) return;
-    
-    try {
-        const idToken = await currentUser.getIdToken();
-        const response = await fetch('/api/fulfill-order', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                idToken: idToken,
-                orderId: orderId
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            alert('Order fulfilled successfully! PDF generated.');
-            loadAdminOrders(document.getElementById('admin-date-filter').value);
-        } else {
-            alert('Fulfillment failed: ' + data.error);
-        }
-    } catch (error) {
-        console.error('Fulfill order error:', error);
-        alert('Fulfillment failed. Please try again.');
-    }
+    // Save PDF
+    doc.save('resume.pdf');
 }
 
 // Initialize
