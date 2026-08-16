@@ -19,7 +19,6 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-*.py
 
 # Virtual Environment
 venv/
@@ -53,6 +52,7 @@ generated_pdfs/*
 firebase-service-account.json
 *.json
 !vercel.json
+!package.json
 
 # Backend files (not needed for static site)
 app.py
