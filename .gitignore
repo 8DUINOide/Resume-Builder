@@ -50,3 +50,4 @@ generated_pdfs/*
 
 # Firebase
 firebase-service-account.json
+*.json
