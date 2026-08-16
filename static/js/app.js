@@ -1,18 +1,39 @@
-// Firebase Configuration - Replace with your actual Firebase config
-// Firebase Configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyCqxKzBeqcqVu61oGjGvqpoEJE85vHD9IU",
-    authDomain: "resume-builder-57506.firebaseapp.com",
-    projectId: "resume-builder-57506",
-    storageBucket: "resume-builder-57506.firebasestorage.app",
-    messagingSenderId: "913860230219",
-    appId: "1:913860230219:web:c4f33ba46a14436c2961ce",
-    measurementId: "G-0QTMHK3JQC"
-};
+const firebaseConfig = window.APP_FIREBASE_CONFIG && Object.keys(window.APP_FIREBASE_CONFIG).length
+    ? window.APP_FIREBASE_CONFIG
+    : {
+        apiKey: "",
+        authDomain: "",
+        projectId: "",
+        storageBucket: "",
+        messagingSenderId: "",
+        appId: "",
+        measurementId: ""
+    };
+
+const firebaseConfigMissing = !firebaseConfig.apiKey || !firebaseConfig.projectId;
+if (firebaseConfigMissing) {
+    console.warn('Firebase config is missing. Sign-in will fail until the app is configured with a valid FIREBASE_API_KEY and project settings.');
+}
 
 // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+if (firebase.apps && firebase.apps.length === 0 && !firebaseConfigMissing) {
+    firebase.initializeApp(firebaseConfig);
+}
 const auth = firebase.auth();
+
+if (firebaseConfigMissing) {
+    const warning = document.getElementById('firebase-warning');
+    if (warning) {
+        warning.classList.remove('hidden');
+        warning.textContent = 'Firebase is not configured correctly. Add the valid web API key and project settings to the environment before using Google Sign-In.';
+    }
+    const signInButtons = document.querySelectorAll('#login-btn, #main-login-btn');
+    signInButtons.forEach(button => {
+        button.disabled = true;
+        button.title = 'Missing Firebase configuration';
+        button.classList.add('opacity-50', 'cursor-not-allowed');
+    });
+}
 
 // Global state
 let currentUser = null;
@@ -572,6 +593,27 @@ function showConfirmationModal(refId) {
 }
 
 document.getElementById('close-modal').addEventListener('click', () => {
+    document.getElementById('confirmation-modal').classList.add('hidden');
+    // Reset form
+    currentStep = 1;
+    updateStepUI();
+    resumeData = {
+        personalInfo: {},
+        summary: '',
+        experience: [],
+        education: [],
+        skills: [],
+        projects: []
+    };
+    document.querySelectorAll('input, textarea').forEach(input => input.value = '');
+    document.getElementById('experience-list').innerHTML = '';
+    document.getElementById('education-list').innerHTML = '';
+    document.getElementById('skills-list').innerHTML = '';
+    document.getElementById('projects-list').innerHTML = '';
+    document.getElementById('photo-preview').classList.add('hidden');
+});
+
+document.getElementById('close-modal-x').addEventListener('click', () => {
     document.getElementById('confirmation-modal').classList.add('hidden');
     // Reset form
     currentStep = 1;

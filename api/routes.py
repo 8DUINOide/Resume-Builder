@@ -2,6 +2,8 @@ from flask import Blueprint, request, jsonify, send_file
 from firebase_init import db
 from firebase_admin import auth
 from resume_generator import ResumeGenerator
+from rate_limiter import rate_limit, order_rate_limit
+from emailer import email_notifier
 import datetime
 import random
 import string
@@ -12,6 +14,12 @@ api_bp = Blueprint('api', __name__)
 
 # Initialize resume generator
 resume_gen = ResumeGenerator()
+
+
+def require_db():
+    """Return True when Firestore is configured and available."""
+    return db is not None
+
 
 def verify_firebase_token(id_token):
     """Verify Firebase ID token and return user info"""
@@ -86,12 +94,16 @@ def increment_daily_edit_count(uid):
         print(f"Error incrementing edit count: {e}")
 
 @api_bp.route('/create-order', methods=['POST'])
+@order_rate_limit(max_daily=10, max_hourly=3)
 def create_order():
     """Create a new resume order"""
     try:
-        data = request.json
+        if not require_db():
+            return jsonify({'error': 'Firebase Firestore is not configured on this server. Set the Firebase service account variables in .env.'}), 503
+
+        data = request.json or {}
         id_token = data.get('idToken')
-        
+
         if not id_token:
             return jsonify({'error': 'No authentication token provided'}), 401
         
@@ -118,7 +130,11 @@ def create_order():
         # Generate reference ID
         ref_id = generate_ref_id()
         
-        # Create order document
+        # Generate a document ID using Firestore's auto-ID
+        # Use document().id to get a new auto-generated ID without creating the document yet
+        doc_id = db.collection('orders').document().id
+        
+        # Create order document with the generated ID
         order_data = {
             'refId': ref_id,
             'customerId': uid,
@@ -132,12 +148,18 @@ def create_order():
             'pdfStorageUrl': None
         }
         
-        order_ref = db.collection('orders').add(order_data)
-        
+        # Set the document with the explicit ID
+        db.collection('orders').document(doc_id).set(order_data)
+
+        # Send email notifications
+        customer_phone = data.get('resumeData', {}).get('personalInfo', {}).get('phone', 'Not provided')
+        email_notifier.send_order_confirmation(email, display_name, ref_id)
+        email_notifier.send_new_order_notification(ref_id, display_name, email, customer_phone, order_data['templateType'])
+
         return jsonify({
             'success': True,
             'refId': ref_id,
-            'orderId': order_ref[1].id
+            'orderId': doc_id
         }), 200
         
     except Exception as e:
