@@ -1,4 +1,21 @@
+// Firebase Configuration - Replace with your actual Firebase config
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+
+// Initialize Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const auth = firebase.auth();
+
 // Global state
+let currentUser = null;
 let currentStep = 1;
 let selectedTemplate = 'ats_classic';
 let resumeData = {
@@ -16,11 +33,33 @@ const loginPrompt = document.getElementById('login-prompt');
 const builderSection = document.getElementById('builder-section');
 const mainLoginBtn = document.getElementById('main-login-btn');
 
-// Simple state management - show builder on button click
-mainLoginBtn.addEventListener('click', () => {
-    loginPrompt.classList.add('hidden');
-    builderSection.classList.remove('hidden');
+// Google Sign-In
+async function signInWithGoogle() {
+    try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        const result = await auth.signInWithPopup(provider);
+        console.log('Signed in:', result.user);
+    } catch (error) {
+        console.error('Sign-in error:', error);
+        alert('Sign-in failed. Please configure Firebase credentials.');
+    }
+}
+
+// Auth State Observer
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        currentUser = user;
+        loginPrompt.classList.add('hidden');
+        builderSection.classList.remove('hidden');
+        loadDraft();
+    } else {
+        currentUser = null;
+        loginPrompt.classList.remove('hidden');
+        builderSection.classList.add('hidden');
+    }
 });
+
+mainLoginBtn.addEventListener('click', signInWithGoogle);
 
 
 // Step Navigation
