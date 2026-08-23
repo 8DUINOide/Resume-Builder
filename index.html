@@ -6,10 +6,11 @@
     <title>Artex Resume Builder — Create Your Professional Resume</title>
     <meta name="description" content="Build a polished, ATS-friendly resume and order a printed copy from Artex Shop.">
 
-    <!-- Google Fonts -->
+    <!-- Google Fonts & FontAwesome -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Styles -->
     <link rel="stylesheet" href="./static/css/styles.css">
@@ -111,7 +112,7 @@
                         <!-- Contact Info -->
                         <div class="form-section">
                             <div class="form-section-header">
-                                <div class="form-section-title"><span class="icon">👤</span> Contact Information</div>
+                                <div class="form-section-title"><span class="icon"><i class="fa-solid fa-user"></i></span> Contact Information</div>
                                 <span class="form-section-badge">Required</span>
                             </div>
                             <div class="form-grid cols-2">
@@ -145,7 +146,7 @@
                         <!-- Summary -->
                         <div class="form-section">
                             <div class="form-section-header">
-                                <div class="form-section-title"><span class="icon">📝</span> Professional Summary</div>
+                                <div class="form-section-title"><span class="icon"><i class="fa-solid fa-file-lines"></i></span> Professional Summary</div>
                             </div>
                             <div class="form-group">
                                 <textarea id="summary" class="form-textarea" rows="4" placeholder="Write a brief summary about yourself, your career goals, and key strengths..."></textarea>
@@ -155,7 +156,7 @@
                         <!-- Experience -->
                         <div class="form-section">
                             <div class="form-section-header">
-                                <div class="form-section-title"><span class="icon">💼</span> Work Experience</div>
+                                <div class="form-section-title"><span class="icon"><i class="fa-solid fa-briefcase"></i></span> Work Experience</div>
                             </div>
                             <div class="entries-list" id="experience-list"></div>
                             <button type="button" id="btn-add-experience" class="btn-add-entry">+ Add Experience</button>
@@ -164,7 +165,7 @@
                         <!-- Education -->
                         <div class="form-section">
                             <div class="form-section-header">
-                                <div class="form-section-title"><span class="icon">🎓</span> Education</div>
+                                <div class="form-section-title"><span class="icon"><i class="fa-solid fa-graduation-cap"></i></span> Education</div>
                             </div>
                             <div class="entries-list" id="education-list"></div>
                             <button type="button" id="btn-add-education" class="btn-add-entry">+ Add Education</button>
@@ -173,7 +174,7 @@
                         <!-- Skills -->
                         <div class="form-section">
                             <div class="form-section-header">
-                                <div class="form-section-title"><span class="icon">⚡</span> Skills</div>
+                                <div class="form-section-title"><span class="icon"><i class="fa-solid fa-bolt"></i></span> Skills</div>
                             </div>
                             <div class="entries-list" id="skills-list"></div>
                             <button type="button" id="btn-add-skill" class="btn-add-entry">+ Add Skill</button>
@@ -182,7 +183,7 @@
                         <!-- Projects -->
                         <div class="form-section">
                             <div class="form-section-header">
-                                <div class="form-section-title"><span class="icon">🚀</span> Projects</div>
+                                <div class="form-section-title"><span class="icon"><i class="fa-solid fa-rocket"></i></span> Projects</div>
                             </div>
                             <div class="entries-list" id="projects-list"></div>
                             <button type="button" id="btn-add-project" class="btn-add-entry">+ Add Project</button>
@@ -195,7 +196,7 @@
                         <p class="step-subtitle">Upload a professional photo (optional).</p>
 
                         <div class="photo-upload-area" id="photo-drop-area">
-                            <div class="photo-upload-icon">📷</div>
+                            <div class="photo-upload-icon"><i class="fa-solid fa-camera"></i></div>
                             <div class="photo-upload-text">
                                 <h3>Click or drag a photo here</h3>
                                 <p>JPG or PNG, max 5 MB</p>
@@ -335,7 +336,7 @@
          =========================== -->
     <div id="mobile-preview-overlay" class="mobile-preview-overlay hidden">
         <div class="mobile-preview-content">
-            <button type="button" class="mobile-preview-close" id="btn-close-mobile-preview">✕</button>
+            <button type="button" class="mobile-preview-close" id="btn-close-mobile-preview"><i class="fa-solid fa-xmark"></i></button>
             <div id="mobile-preview-inner" style="overflow:auto;"></div>
         </div>
     </div>

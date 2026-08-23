@@ -451,7 +451,7 @@ function adminAddExp(data = {}) {
     const div = document.createElement('div');
     div.className = 'admin-entry-card';
     div.innerHTML = `
-        <button type="button" class="btn-remove-adm-entry" onclick="this.closest('.admin-entry-card').remove();">✕ Remove</button>
+        <button type="button" class="btn-remove-adm-entry" onclick="this.closest('.admin-entry-card').remove();"><i class="fa-solid fa-trash-can"></i> Remove</button>
         <div class="form-grid cols-2">
             <div class="form-group"><label>Job Title</label><input type="text" class="adm-input exp-title" value="${escapeHtml(data.title)}"></div>
             <div class="form-group"><label>Company</label><input type="text" class="adm-input exp-company" value="${escapeHtml(data.company)}"></div>
@@ -466,7 +466,7 @@ function adminAddEdu(data = {}) {
     const div = document.createElement('div');
     div.className = 'admin-entry-card';
     div.innerHTML = `
-        <button type="button" class="btn-remove-adm-entry" onclick="this.closest('.admin-entry-card').remove();">✕ Remove</button>
+        <button type="button" class="btn-remove-adm-entry" onclick="this.closest('.admin-entry-card').remove();"><i class="fa-solid fa-trash-can"></i> Remove</button>
         <div class="form-grid cols-2">
             <div class="form-group"><label>Degree</label><input type="text" class="adm-input edu-degree" value="${escapeHtml(data.degree)}"></div>
             <div class="form-group"><label>School</label><input type="text" class="adm-input edu-school" value="${escapeHtml(data.school)}"></div>
@@ -484,7 +484,7 @@ function adminAddSkill(data = {}) {
     div.innerHTML = `
         <div style="display:flex; gap:10px; align-items:center;">
             <input type="text" class="adm-input skill-name" value="${escapeHtml(data.name)}" style="flex:1;">
-            <button type="button" class="btn-remove-adm-entry" style="position:static;" onclick="this.closest('.admin-entry-card').remove();">✕</button>
+            <button type="button" class="btn-remove-adm-entry" style="position:static;" onclick="this.closest('.admin-entry-card').remove();"><i class="fa-solid fa-trash-can"></i></button>
         </div>`;
     document.getElementById('edit-skill-list').appendChild(div);
 }
@@ -493,7 +493,7 @@ function adminAddProj(data = {}) {
     const div = document.createElement('div');
     div.className = 'admin-entry-card';
     div.innerHTML = `
-        <button type="button" class="btn-remove-adm-entry" onclick="this.closest('.admin-entry-card').remove();">✕ Remove</button>
+        <button type="button" class="btn-remove-adm-entry" onclick="this.closest('.admin-entry-card').remove();"><i class="fa-solid fa-trash-can"></i> Remove</button>
         <div class="form-grid">
             <div class="form-group"><label>Project Name</label><input type="text" class="adm-input proj-name" value="${escapeHtml(data.name)}"></div>
             <div class="form-group"><label>Description</label><textarea class="adm-input proj-desc" rows="3">${escapeHtml(data.description)}</textarea></div>

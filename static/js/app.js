@@ -187,7 +187,7 @@ function addExperienceEntry(data = {}) {
     const div = document.createElement('div');
     div.className = 'entry-card';
     div.innerHTML = `
-        <button type="button" class="btn-remove-entry" onclick="this.closest('.entry-card').remove(); debounceSave();">✕</button>
+        <button type="button" class="btn-remove-entry" onclick="this.closest('.entry-card').remove(); debounceSave();"><i class="fa-solid fa-xmark"></i></button>
         <div class="form-grid cols-2">
             <div class="form-group">
                 <label class="form-label">Job Title</label>
@@ -223,7 +223,7 @@ function addEducationEntry(data = {}) {
     const div = document.createElement('div');
     div.className = 'entry-card';
     div.innerHTML = `
-        <button type="button" class="btn-remove-entry" onclick="this.closest('.entry-card').remove(); debounceSave();">✕</button>
+        <button type="button" class="btn-remove-entry" onclick="this.closest('.entry-card').remove(); debounceSave();"><i class="fa-solid fa-xmark"></i></button>
         <div class="form-grid cols-2">
             <div class="form-group">
                 <label class="form-label">Degree</label>
@@ -262,7 +262,7 @@ function addSkillEntry(data = {}) {
     div.innerHTML = `
         <div style="display:flex;align-items:center;gap:12px;">
             <input type="text" class="form-input skill-name" value="${escAttr(data.name)}" placeholder="e.g. JavaScript, Python, Photoshop" style="flex:1;">
-            <button type="button" class="btn-remove-entry" style="position:static;width:28px;height:28px;" onclick="this.closest('.entry-card').remove(); debounceSave();">✕</button>
+            <button type="button" class="btn-remove-entry" style="position:static;width:28px;height:28px;" onclick="this.closest('.entry-card').remove(); debounceSave();"><i class="fa-solid fa-xmark"></i></button>
         </div>
     `;
     container.appendChild(div);
@@ -277,7 +277,7 @@ function addProjectEntry(data = {}) {
     const div = document.createElement('div');
     div.className = 'entry-card';
     div.innerHTML = `
-        <button type="button" class="btn-remove-entry" onclick="this.closest('.entry-card').remove(); debounceSave();">✕</button>
+        <button type="button" class="btn-remove-entry" onclick="this.closest('.entry-card').remove(); debounceSave();"><i class="fa-solid fa-xmark"></i></button>
         <div class="form-grid">
             <div class="form-group">
                 <label class="form-label">Project Name</label>
