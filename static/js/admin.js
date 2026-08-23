@@ -24,7 +24,7 @@ const db = firebase.firestore();
 // You should use Firebase Custom Claims or Security Rules.
 // For this demo/shop context, we are hardcoding an allowed email list on the client side.
 const ALLOWED_ADMIN_EMAILS = [
-    "alfrancispaz@gmail.com", // Your email
+    "alfrancisbadillapaz10@gmail.com", // Your email
     "your.admin@email.com"
 ];
 
@@ -151,8 +151,8 @@ function renderOrders() {
         const matchFilter = currentFilter === 'all' || order.status === currentFilter;
         let matchSearch = true;
         if (searchTerm) {
-            matchSearch = order.refId.toUpperCase().includes(searchTerm) || 
-                          (order.resumeData?.personalInfo?.fullName || '').toUpperCase().includes(searchTerm);
+            matchSearch = order.refId.toUpperCase().includes(searchTerm) ||
+                (order.resumeData?.personalInfo?.fullName || '').toUpperCase().includes(searchTerm);
         }
         return matchFilter && matchSearch;
     });
@@ -161,18 +161,18 @@ function renderOrders() {
         emptyState.classList.remove('hidden');
     } else {
         emptyState.classList.add('hidden');
-        
+
         filtered.forEach(order => {
             const tr = document.createElement('tr');
-            
-            const dateStr = order.createdAt && order.createdAt.toDate 
-                ? order.createdAt.toDate().toLocaleString() 
+
+            const dateStr = order.createdAt && order.createdAt.toDate
+                ? order.createdAt.toDate().toLocaleString()
                 : 'Unknown date';
-                
+
             const name = order.resumeData?.personalInfo?.fullName || 'N/A';
             const email = order.resumeData?.personalInfo?.email || 'N/A';
             const tpl = order.templateType || 'ats_classic';
-            
+
             const statusClass = `status-${order.status || 'pending'}`;
             const statusText = (order.status || 'pending').toUpperCase();
 
@@ -197,7 +197,7 @@ function renderOrders() {
 function updateStats() {
     const total = ordersList.length;
     const pending = ordersList.filter(o => o.status === 'pending').length;
-    
+
     // Simple today check
     const today = new Date().toDateString();
     const fulfilledToday = ordersList.filter(o => {
@@ -236,14 +236,14 @@ function openDetailModal(order) {
     selectedOrder = order;
     const p = order.resumeData?.personalInfo || {};
     const dateStr = order.createdAt && order.createdAt.toDate ? order.createdAt.toDate().toLocaleString() : 'N/A';
-    
+
     detailRefId.textContent = `#${order.refId}`;
     detailName.textContent = p.fullName || 'N/A';
     detailEmail.textContent = p.email || 'N/A';
     detailPhone.textContent = p.phone || 'N/A';
     detailTemplate.textContent = order.templateType || 'N/A';
     detailDate.textContent = dateStr;
-    
+
     const statusText = (order.status || 'pending').toUpperCase();
     detailStatus.innerHTML = `<span class="status-badge status-${order.status || 'pending'}">${statusText}</span>`;
 
@@ -251,7 +251,7 @@ function openDetailModal(order) {
     if (window.ResumeTemplates && order.resumeData) {
         const html = ResumeTemplates.render(order.templateType || 'ats_classic', order.resumeData);
         adminPreviewInner.innerHTML = html;
-        
+
         // Scale to fit Container
         setTimeout(() => {
             const container = document.querySelector('.admin-resume-preview .preview-scale-container');
@@ -288,12 +288,12 @@ async function updateOrderStatus(newStatus) {
         await db.collection('orders').doc(selectedOrder.id).update({
             status: newStatus
         });
-        
+
         // Optimistically update local modal view
         selectedOrder.status = newStatus;
         const statusText = newStatus.toUpperCase();
         detailStatus.innerHTML = `<span class="status-badge status-${newStatus}">${statusText}</span>`;
-        
+
     } catch (error) {
         console.error("Error updating status:", error);
         alert("Failed to update status. Check permissions.");
@@ -322,21 +322,21 @@ btnDelete.addEventListener('click', async () => {
 // ===========================================
 btnPrint.addEventListener('click', () => {
     if (!selectedOrder || !selectedOrder.resumeData) return;
-    
+
     // The trick for clean printing without blowing up the admin UI:
     // We open a new window, write the resume HTML to it, and call print()
     const printWindow = window.open('', '_blank');
-    
+
     if (!printWindow) {
         alert("Please allow popups to print.");
         return;
     }
-    
+
     // We need the template HTML
     const resumeHtml = ResumeTemplates.render(selectedOrder.templateType || 'ats_classic', selectedOrder.resumeData);
-    
+
     updateOrderStatus('printed');
-    
+
     printWindow.document.write(`
         <!DOCTYPE html>
         <html>
@@ -368,7 +368,7 @@ btnPrint.addEventListener('click', () => {
         </body>
         </html>
     `);
-    
+
     printWindow.document.close();
 });
 
