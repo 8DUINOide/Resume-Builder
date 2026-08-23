@@ -741,7 +741,7 @@ async function generateOrder() {
     }
 
     btnGenerate.disabled = false;
-    btnGenerate.innerHTML = '🎯 Generate Order';
+    btnGenerate.innerHTML = '<i class="fa-solid fa-bullseye"></i> Generate Order';
     checkRateLimit();
 }
 
@@ -757,9 +757,9 @@ function startCooldown() {
         if (remaining <= 0) {
             clearInterval(cooldownTimer);
             btnGenerate.disabled = isRateLimited();
-            btnGenerate.innerHTML = '🎯 Generate Order';
+            btnGenerate.innerHTML = '<i class="fa-solid fa-bullseye"></i> Generate Order';
         } else {
-            btnGenerate.innerHTML = `⏳ Wait ${remaining}s`;
+            btnGenerate.innerHTML = `<i class="fa-solid fa-clock"></i> Wait ${remaining}s`;
         }
     }, 1000);
 }
@@ -770,8 +770,8 @@ function startCooldown() {
 btnCopyRef.addEventListener('click', () => {
     const text = refIdDisplay.textContent;
     navigator.clipboard.writeText(text).then(() => {
-        btnCopyRef.textContent = '✓ Copied!';
-        setTimeout(() => { btnCopyRef.innerHTML = '📋 Copy Code'; }, 2000);
+        btnCopyRef.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+        setTimeout(() => { btnCopyRef.innerHTML = '<i class="fa-regular fa-clipboard"></i> Copy Code'; }, 2000);
     }).catch(() => {
         showToast('Failed to copy. Please copy manually.', 'warning');
     });

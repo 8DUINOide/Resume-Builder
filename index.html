@@ -6,10 +6,10 @@
     <title>Artex Resume Builder — Create Your Professional Resume</title>
     <meta name="description" content="Build a polished, ATS-friendly resume and order a printed copy from Artex Shop.">
 
-    <!-- Google Fonts & FontAwesome -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Styles -->
@@ -196,7 +196,7 @@
                         <p class="step-subtitle">Upload a professional photo (optional).</p>
 
                         <div class="photo-upload-area" id="photo-drop-area">
-                            <div class="photo-upload-icon"><i class="fa-solid fa-camera"></i></div>
+                            <div class="photo-upload-icon"><i class="fa-solid fa-camera" style="font-size:32px;"></i></div>
                             <div class="photo-upload-text">
                                 <h3>Click or drag a photo here</h3>
                                 <p>JPG or PNG, max 5 MB</p>
@@ -273,7 +273,7 @@
                         <p class="step-subtitle">Review your resume, then generate your order to receive a Ref ID.</p>
 
                         <div id="rate-limit-banner" class="rate-limit-banner hidden">
-                            ⚠️ You've reached the order limit. Please wait before submitting again.
+                            <i class="fa-solid fa-triangle-exclamation"></i> You've reached the order limit. Please wait before submitting again.
                         </div>
 
                         <div id="full-preview" class="full-preview-container">
@@ -287,7 +287,7 @@
                 <div class="step-nav">
                     <button type="button" id="btn-prev" class="btn-prev hidden">← Previous</button>
                     <button type="button" id="btn-next" class="btn-next" style="margin-left:auto;">Next →</button>
-                    <button type="button" id="btn-generate" class="btn-generate hidden" style="margin-left:auto;">🎯 Generate Order</button>
+                    <button type="button" id="btn-generate" class="btn-generate hidden" style="margin-left:auto;"><i class="fa-solid fa-bullseye"></i> Generate Order</button>
                 </div>
             </div>
 
@@ -307,7 +307,7 @@
         </main>
 
         <!-- Mobile Preview Toggle -->
-        <button type="button" id="btn-mobile-preview" class="btn-mobile-preview">👁</button>
+        <button type="button" id="btn-mobile-preview" class="btn-mobile-preview"><i class="fa-solid fa-eye"></i></button>
 
     </div>
 
@@ -316,11 +316,11 @@
          =========================== -->
     <div id="ref-modal" class="modal-overlay hidden">
         <div class="ref-modal">
-            <div class="success-icon">✅</div>
+            <div class="success-icon"><i class="fa-solid fa-circle-check" style="font-size:48px; color:#10B981;"></i></div>
             <h2>Order Generated!</h2>
             <p class="ref-description">Show this reference code to the shop staff to get your resume printed.</p>
             <div id="ref-id-display" class="ref-id-display">#REF-0000</div>
-            <button type="button" id="btn-copy-ref" class="btn-copy-ref">📋 Copy Code</button>
+            <button type="button" id="btn-copy-ref" class="btn-copy-ref"><i class="fa-regular fa-clipboard"></i> Copy Code</button>
             <div class="ref-instructions">
                 <strong>What happens next?</strong><br>
                 1. Show the Ref ID to the shop staff<br>
@@ -345,7 +345,7 @@
     <div id="toast-container" class="toast-container"></div>
 
     <!-- Auto-save indicator -->
-    <div id="auto-save-badge" class="auto-save-badge hidden">✓ Draft saved</div>
+    <div id="auto-save-badge" class="auto-save-badge hidden"><i class="fa-solid fa-check"></i> Draft saved</div>
 
     <!-- Scripts -->
     <script src="./static/js/templates.js"></script>
