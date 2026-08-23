@@ -546,3 +546,103 @@ body {
     display: none;
   }
 }
+
+/* --- Admin Edit Form --- */
+.admin-form {
+  margin-top: 10px;
+}
+
+.form-grid {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.form-grid.cols-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--adm-text-muted);
+  margin-bottom: 6px;
+}
+
+.adm-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--adm-surface-2);
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  color: var(--adm-text);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: 0.2s;
+}
+
+.adm-input:focus {
+  border-color: var(--adm-primary);
+}
+
+.admin-list-section {
+  margin-top: 24px;
+}
+
+.list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--adm-border);
+  padding-bottom: 8px;
+}
+
+.list-header h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.btn-adm-add {
+  background: transparent;
+  border: 1px solid var(--adm-border);
+  color: var(--adm-primary-light);
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-adm-add:hover {
+  background: rgba(124,58,237,0.1);
+  border-color: var(--adm-primary);
+}
+
+.admin-entry-card {
+  background: var(--adm-surface-2);
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.btn-remove-adm-entry {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: var(--adm-danger);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.btn-remove-adm-entry:hover {
+  opacity: 0.7;
+}

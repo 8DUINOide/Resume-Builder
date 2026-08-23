@@ -68,6 +68,12 @@ const btnMarkPaid = document.getElementById('btn-mark-paid');
 const btnPrint = document.getElementById('btn-print-resume');
 const btnMarkFulfilled = document.getElementById('btn-mark-fulfilled');
 const btnDelete = document.getElementById('btn-delete-order');
+const btnEditResume = document.getElementById('btn-edit-resume');
+
+// Edit modal
+const editOverlay = document.getElementById('edit-resume-overlay');
+const btnCloseEdit = document.getElementById('btn-close-edit');
+const btnSaveEdit = document.getElementById('btn-save-edit');
 
 // Stats
 const statPending = document.getElementById('stat-pending');
@@ -316,6 +322,200 @@ btnDelete.addEventListener('click', async () => {
         }
     }
 });
+
+// ===========================================
+//  EDIT RESUME FUNCTIONALITY
+// ===========================================
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+btnEditResume.addEventListener('click', () => {
+    if (!selectedOrder || !selectedOrder.resumeData) return;
+    const r = selectedOrder.resumeData;
+    const p = r.personalInfo || {};
+
+    // Populate basic info
+    document.getElementById('edit-fullName').value = p.fullName || '';
+    document.getElementById('edit-email').value = p.email || '';
+    document.getElementById('edit-phone').value = p.phone || '';
+    document.getElementById('edit-location').value = p.location || '';
+    document.getElementById('edit-linkedin').value = p.linkedin || '';
+    document.getElementById('edit-website').value = p.website || '';
+    document.getElementById('edit-summary').value = r.summary || '';
+    document.getElementById('edit-template-select').value = selectedOrder.templateType || 'ats_classic';
+
+    // Clear dynamic lists
+    document.getElementById('edit-exp-list').innerHTML = '';
+    document.getElementById('edit-edu-list').innerHTML = '';
+    document.getElementById('edit-skill-list').innerHTML = '';
+    document.getElementById('edit-proj-list').innerHTML = '';
+
+    // Populate dynamic lists
+    (r.experience || []).forEach(e => adminAddExp(e));
+    (r.education || []).forEach(e => adminAddEdu(e));
+    (r.skills || []).forEach(e => adminAddSkill(e));
+    (r.projects || []).forEach(e => adminAddProj(e));
+
+    editOverlay.classList.remove('hidden');
+});
+
+btnCloseEdit.addEventListener('click', () => {
+    editOverlay.classList.add('hidden');
+});
+
+// Dynamic List Adders
+document.getElementById('btn-edit-add-exp').addEventListener('click', () => adminAddExp());
+document.getElementById('btn-edit-add-edu').addEventListener('click', () => adminAddEdu());
+document.getElementById('btn-edit-add-skill').addEventListener('click', () => adminAddSkill());
+document.getElementById('btn-edit-add-proj').addEventListener('click', () => adminAddProj());
+
+function adminAddExp(data = {}) {
+    const div = document.createElement('div');
+    div.className = 'admin-entry-card';
+    div.innerHTML = `
+        <button type="button" class="btn-remove-adm-entry" onclick="this.closest('.admin-entry-card').remove();">✕ Remove</button>
+        <div class="form-grid cols-2">
+            <div class="form-group"><label>Job Title</label><input type="text" class="adm-input exp-title" value="${escapeHtml(data.title)}"></div>
+            <div class="form-group"><label>Company</label><input type="text" class="adm-input exp-company" value="${escapeHtml(data.company)}"></div>
+            <div class="form-group"><label>Start Date</label><input type="text" class="adm-input exp-start" value="${escapeHtml(data.startDate)}"></div>
+            <div class="form-group"><label>End Date</label><input type="text" class="adm-input exp-end" value="${escapeHtml(data.endDate)}"></div>
+            <div class="form-group" style="grid-column: 1 / -1;"><label>Description</label><textarea class="adm-input exp-desc" rows="3">${escapeHtml(data.description)}</textarea></div>
+        </div>`;
+    document.getElementById('edit-exp-list').appendChild(div);
+}
+
+function adminAddEdu(data = {}) {
+    const div = document.createElement('div');
+    div.className = 'admin-entry-card';
+    div.innerHTML = `
+        <button type="button" class="btn-remove-adm-entry" onclick="this.closest('.admin-entry-card').remove();">✕ Remove</button>
+        <div class="form-grid cols-2">
+            <div class="form-group"><label>Degree</label><input type="text" class="adm-input edu-degree" value="${escapeHtml(data.degree)}"></div>
+            <div class="form-group"><label>School</label><input type="text" class="adm-input edu-school" value="${escapeHtml(data.school)}"></div>
+            <div class="form-group"><label>Start</label><input type="text" class="adm-input edu-start" value="${escapeHtml(data.startDate)}"></div>
+            <div class="form-group"><label>End</label><input type="text" class="adm-input edu-end" value="${escapeHtml(data.endDate)}"></div>
+            <div class="form-group"><label>GPA</label><input type="text" class="adm-input edu-gpa" value="${escapeHtml(data.gpa)}"></div>
+        </div>`;
+    document.getElementById('edit-edu-list').appendChild(div);
+}
+
+function adminAddSkill(data = {}) {
+    const div = document.createElement('div');
+    div.className = 'admin-entry-card';
+    div.style.padding = '8px 16px';
+    div.innerHTML = `
+        <div style="display:flex; gap:10px; align-items:center;">
+            <input type="text" class="adm-input skill-name" value="${escapeHtml(data.name)}" style="flex:1;">
+            <button type="button" class="btn-remove-adm-entry" style="position:static;" onclick="this.closest('.admin-entry-card').remove();">✕</button>
+        </div>`;
+    document.getElementById('edit-skill-list').appendChild(div);
+}
+
+function adminAddProj(data = {}) {
+    const div = document.createElement('div');
+    div.className = 'admin-entry-card';
+    div.innerHTML = `
+        <button type="button" class="btn-remove-adm-entry" onclick="this.closest('.admin-entry-card').remove();">✕ Remove</button>
+        <div class="form-grid">
+            <div class="form-group"><label>Project Name</label><input type="text" class="adm-input proj-name" value="${escapeHtml(data.name)}"></div>
+            <div class="form-group"><label>Description</label><textarea class="adm-input proj-desc" rows="3">${escapeHtml(data.description)}</textarea></div>
+        </div>`;
+    document.getElementById('edit-proj-list').appendChild(div);
+}
+
+btnSaveEdit.addEventListener('click', async () => {
+    if (!selectedOrder) return;
+    
+    btnSaveEdit.disabled = true;
+    btnSaveEdit.textContent = "Saving...";
+
+    // Preserve the old photoUrl if it exists
+    const oldPhotoUrl = selectedOrder.resumeData?.personalInfo?.photoUrl || '';
+
+    const newResumeData = {
+        personalInfo: {
+            fullName: document.getElementById('edit-fullName').value,
+            email: document.getElementById('edit-email').value,
+            phone: document.getElementById('edit-phone').value,
+            location: document.getElementById('edit-location').value,
+            linkedin: document.getElementById('edit-linkedin').value,
+            website: document.getElementById('edit-website').value,
+            photoUrl: oldPhotoUrl
+        },
+        summary: document.getElementById('edit-summary').value,
+        experience: [],
+        education: [],
+        skills: [],
+        projects: []
+    };
+
+    // Collect Dynamic Lists
+    document.querySelectorAll('#edit-exp-list > .admin-entry-card').forEach(card => {
+        newResumeData.experience.push({
+            title: card.querySelector('.exp-title').value,
+            company: card.querySelector('.exp-company').value,
+            startDate: card.querySelector('.exp-start').value,
+            endDate: card.querySelector('.exp-end').value,
+            description: card.querySelector('.exp-desc').value
+        });
+    });
+    document.querySelectorAll('#edit-edu-list > .admin-entry-card').forEach(card => {
+        newResumeData.education.push({
+            degree: card.querySelector('.edu-degree').value,
+            school: card.querySelector('.edu-school').value,
+            startDate: card.querySelector('.edu-start').value,
+            endDate: card.querySelector('.edu-end').value,
+            gpa: card.querySelector('.edu-gpa').value
+        });
+    });
+    document.querySelectorAll('#edit-skill-list > .admin-entry-card').forEach(card => {
+        const name = card.querySelector('.skill-name').value.trim();
+        if (name) newResumeData.skills.push({ name });
+    });
+    document.querySelectorAll('#edit-proj-list > .admin-entry-card').forEach(card => {
+        newResumeData.projects.push({
+            name: card.querySelector('.proj-name').value,
+            description: card.querySelector('.proj-desc').value
+        });
+    });
+
+    const newTemplate = document.getElementById('edit-template-select').value;
+
+    try {
+        await db.collection('orders').doc(selectedOrder.id).update({
+            resumeData: newResumeData,
+            templateType: newTemplate
+        });
+        
+        // Optimistically update the modal UI
+        selectedOrder.resumeData = newResumeData;
+        selectedOrder.templateType = newTemplate;
+        
+        // Update header texts in the modal
+        document.getElementById('detail-name').textContent = newResumeData.personalInfo.fullName;
+        document.getElementById('detail-email').textContent = newResumeData.personalInfo.email;
+        document.getElementById('detail-phone').textContent = newResumeData.personalInfo.phone;
+        document.getElementById('detail-template').textContent = newTemplate;
+        
+        // Re-render preview
+        if (typeof ResumeTemplates !== 'undefined') {
+            const html = ResumeTemplates.render(newTemplate, newResumeData);
+            adminPreviewInner.innerHTML = html;
+        }
+
+        editOverlay.classList.add('hidden');
+        alert("Changes saved successfully!");
+    } catch (error) {
+        console.error("Error updating order:", error);
+        alert("Failed to save changes. Check permissions.");
+    }
+    
+    btnSaveEdit.disabled = false;
+    btnSaveEdit.textContent = "💾 Save Changes";
+});
+
 
 // ===========================================
 //  PRINTING

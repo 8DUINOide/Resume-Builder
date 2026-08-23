@@ -171,9 +171,93 @@
             
             <div class="order-actions">
                 <button id="btn-mark-paid" class="btn-action paid">Mark Paid</button>
+                <button id="btn-edit-resume" class="btn-action edit" style="background:#4F46E5;color:white;">✏️ Edit Resume</button>
                 <button id="btn-print-resume" class="btn-action print">Print Resume</button>
                 <button id="btn-mark-fulfilled" class="btn-action fulfill" style="margin-left:auto;">✓ Mark Fulfilled</button>
                 <button id="btn-delete-order" class="btn-action delete">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===========================
+         EDIT RESUME OVERLAY
+         =========================== -->
+    <div id="edit-resume-overlay" class="order-detail-overlay hidden" style="z-index: 2000;">
+        <div class="order-detail-panel" style="max-width: 900px;">
+            <div class="order-detail-header">
+                <h2>Edit Resume</h2>
+                <button id="btn-close-edit" class="btn-close-detail">✕</button>
+            </div>
+            
+            <div class="order-detail-body" style="background:var(--adm-bg); padding:20px; border-radius:8px;">
+                <div class="admin-form">
+                    
+                    <!-- Basic Info -->
+                    <h3 style="margin-top:0; border-bottom:1px solid var(--adm-border); padding-bottom:8px;">Basic Info</h3>
+                    <div class="form-grid cols-2">
+                        <div class="form-group"><label>Full Name</label><input type="text" id="edit-fullName" class="adm-input"></div>
+                        <div class="form-group"><label>Email</label><input type="text" id="edit-email" class="adm-input"></div>
+                        <div class="form-group"><label>Phone</label><input type="text" id="edit-phone" class="adm-input"></div>
+                        <div class="form-group"><label>Location</label><input type="text" id="edit-location" class="adm-input"></div>
+                        <div class="form-group"><label>LinkedIn</label><input type="text" id="edit-linkedin" class="adm-input"></div>
+                        <div class="form-group"><label>Website</label><input type="text" id="edit-website" class="adm-input"></div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top:12px;">
+                        <label>Summary</label>
+                        <textarea id="edit-summary" class="adm-input" rows="3"></textarea>
+                    </div>
+
+                    <!-- Dynamic Lists -->
+                    <div class="admin-list-section">
+                        <div class="list-header">
+                            <h3>Experience</h3>
+                            <button type="button" id="btn-edit-add-exp" class="btn-adm-add">+ Add</button>
+                        </div>
+                        <div id="edit-exp-list"></div>
+                    </div>
+
+                    <div class="admin-list-section">
+                        <div class="list-header">
+                            <h3>Education</h3>
+                            <button type="button" id="btn-edit-add-edu" class="btn-adm-add">+ Add</button>
+                        </div>
+                        <div id="edit-edu-list"></div>
+                    </div>
+
+                    <div class="admin-list-section">
+                        <div class="list-header">
+                            <h3>Skills</h3>
+                            <button type="button" id="btn-edit-add-skill" class="btn-adm-add">+ Add</button>
+                        </div>
+                        <div id="edit-skill-list"></div>
+                    </div>
+
+                    <div class="admin-list-section">
+                        <div class="list-header">
+                            <h3>Projects</h3>
+                            <button type="button" id="btn-edit-add-proj" class="btn-adm-add">+ Add</button>
+                        </div>
+                        <div id="edit-proj-list"></div>
+                    </div>
+
+                    <!-- Template Selection -->
+                    <h3 style="margin-top:24px; border-bottom:1px solid var(--adm-border); padding-bottom:8px;">Template</h3>
+                    <div class="form-group">
+                        <select id="edit-template-select" class="adm-input">
+                            <option value="ats_classic">ATS Classic</option>
+                            <option value="canva_modern_1">Modern Two-Column</option>
+                            <option value="canva_creative_2">Creative Banner</option>
+                            <option value="canva_minimal_3">Minimal Elegant</option>
+                            <option value="canva_executive_4">Executive Dark</option>
+                        </select>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="order-actions" style="justify-content: flex-end;">
+                <button id="btn-save-edit" class="btn-action fulfill">💾 Save Changes</button>
             </div>
         </div>
     </div>
