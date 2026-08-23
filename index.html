@@ -3,315 +3,384 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resume Builder - Shop</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <title>Artex Resume Builder — Create Your Professional Resume</title>
+    <meta name="description" content="Build a polished, ATS-friendly resume and order a printed copy from Artex Shop.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="./static/css/styles.css">
+
+    <!-- Firebase SDK v8 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <style>
-        body {
-            background: #f2f3f5;
-            color: #111827;
-            font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        }
-        .app-shell {
-            max-width: 1440px;
-            margin: 0 auto;
-            padding: 22px 16px 40px;
-        }
-        .brand-mark {
-            width: 32px;
-            height: 32px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #0ea5e9, #3b82f6, #8b5cf6);
-            position: relative;
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3);
-        }
-        .brand-mark::before,
-        .brand-mark::after {
-            content: "";
-            position: absolute;
-            inset: 7px;
-            border-radius: 6px;
-            background: rgba(255,255,255,0.18);
-        }
-        .brand-mark::after {
-            inset: 12px;
-            background: rgba(255,255,255,0.5);
-        }
-        .fixresume-header {
-            background: rgba(255,255,255,0.8);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-        }
-        .template-card {
-            border: 2px solid rgba(148, 163, 184, 0.28);
-            background: #f8fafc;
-            border-radius: 18px;
-            overflow: hidden;
-            transition: all 0.2s ease;
-        }
-        .template-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-        }
-        .template-card.selected {
-            border-color: #8b5cf6;
-            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.12);
-            background: #f5f3ff;
-        }
-        .preview-panel {
-            background: #ffffff;
-            border: 1px solid rgba(148, 163, 184, 0.25);
-            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
-        }
-        .resume-preview {
-            background: #f8fafc;
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            border-radius: 16px;
-            padding: 22px 22px 16px;
-        }
-        .resume-preview .header-bar {
-            background: linear-gradient(90deg, #ecfdf5, #ecfeff);
-            border: 1px solid rgba(16,185,129,0.12);
-            border-radius: 14px;
-            padding: 10px 14px;
-            margin-bottom: 16px;
-        }
-        .step-indicator.active {
-            background: #8b5cf6;
-            color: white;
-        }
-        .step-indicator.completed {
-            background: #10b981;
-            color: white;
-        }
-        .auto-save-indicator {
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-    </style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <!-- jsPDF + html2canvas for PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
-<body class="min-h-screen flex items-center justify-center">
+<body>
 
-    <!-- Main Content -->
-    <main class="app-shell">
-        <div id="login-prompt" class="text-center py-20">
-            <div class="max-w-md mx-auto bg-white rounded-3xl shadow-md p-10 border border-slate-200">
-                <div class="w-24 h-24 flex items-center justify-center mx-auto mb-6">
-                    <img src="/artex-icon.jpg" alt="Artex Icon" class="w-24 h-24 object-contain">
-                </div>
-                <h2 class="text-3xl font-bold text-slate-800 mb-4">Build your dream resume</h2>
-                <p class="text-slate-600 mb-8">Sign in to create polished, ATS-friendly resumes with live preview and auto-save.</p>
-                <button id="main-login-btn" class="flex items-center justify-center w-full px-8 py-3 border border-gray-300 rounded-xl font-semibold hover:bg-gray-50 transition bg-white text-gray-700">
-                    <svg class="w-5 h-5 mr-3" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                    </svg>
-                    Sign in with Google
-                </button>
-            </div>
+    <!-- ===========================
+         LOGIN SCREEN
+         =========================== -->
+    <div id="login-screen" class="login-screen">
+        <div class="login-card">
+            <img src="./artex-icon.jpg" alt="Artex" class="logo-icon">
+            <h1>Build Your Resume</h1>
+            <p>Sign in with Google to create a polished, professional resume and order a printed copy.</p>
+            <button id="btn-login" class="btn-google">
+                <svg viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Sign in with Google
+            </button>
         </div>
+    </div>
 
-        <div id="builder-section" class="hidden">
-            <div id="auto-save-indicator" class="hidden fixed top-24 right-6 bg-emerald-500 text-white px-4 py-2 rounded-xl shadow-lg auto-save-indicator">
-                <span class="flex items-center space-x-2 text-sm font-medium">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    <span>Draft saved to cloud</span>
-                </span>
-            </div>
+    <!-- ===========================
+         APP SHELL (hidden until auth)
+         =========================== -->
+    <div id="app-shell" class="app-shell hidden">
 
-            <div class="bg-white rounded-[28px] border border-slate-200 shadow-sm overflow-hidden">
-                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
-                    <div class="flex items-center space-x-3">
-                        <div class="brand-mark"></div>
-                        <div class="text-lg font-bold text-slate-800">Resume Builder</div>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <span class="px-3 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700">Auto-save</span>
-                        <span class="text-sm text-slate-500">Saved locally</span>
-                    </div>
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-inner">
+                <div class="header-brand">
+                    <img src="./artex-icon.jpg" alt="Artex">
+                    <span>Resume Builder</span>
                 </div>
-
-                <div class="grid lg:grid-cols-[1.1fr_0.9fr] gap-0">
-                    <div class="p-6 lg:p-8 border-r border-slate-200">
-                        <div class="mb-6 flex items-center justify-between">
-                            <div class="flex items-center space-x-3">
-                                <button class="text-sm text-slate-500">←</button>
-                                <span class="text-sm font-medium text-slate-500">Step 1 of 5</span>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <div class="step-indicator active w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" data-step="1">1</div>
-                                <div class="step-indicator w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold" data-step="2">2</div>
-                                <div class="step-indicator w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold" data-step="3">3</div>
-                                <div class="step-indicator w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold" data-step="4">4</div>
-                                <div class="step-indicator w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold" data-step="5">5</div>
-                            </div>
-                        </div>
-
-                        <div class="step-content" id="step-1">
-                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Contact Information</h2>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div class="md:col-span-2">
-                                    <label class="block text-sm font-medium text-slate-700 mb-2">Full Name</label>
-                                    <input type="text" id="fullName" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent" placeholder="John Doe">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-2">Email</label>
-                                    <input type="email" id="email" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent" placeholder="john@example.com">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-2">Phone</label>
-                                    <input type="tel" id="phone" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent" placeholder="+1 234 567 8900">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-2">Location</label>
-                                    <input type="text" id="location" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent" placeholder="New York, NY">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-2">LinkedIn</label>
-                                    <input type="url" id="linkedin" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent" placeholder="linkedin.com/in/johndoe">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-2">Website</label>
-                                    <input type="url" id="website" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent" placeholder="johndoe.com">
-                                </div>
-                                <div class="md:col-span-2">
-                                    <label class="block text-sm font-medium text-slate-700 mb-2">Profile Photo</label>
-                                    <input type="file" id="photo" accept="image/*" class="w-full px-4 py-3 border border-dashed border-slate-300 rounded-xl bg-slate-50 focus:ring-2 focus:ring-violet-500 focus:border-transparent">
-                                    <div id="photo-preview" class="mt-4 hidden">
-                                        <img id="photo-preview-img" src="" alt="Preview" class="w-32 h-32 object-cover rounded-xl border border-slate-200">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="step-content hidden" id="step-2">
-                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Professional Summary</h2>
-                            <textarea id="summary" rows="8" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent" placeholder="Write a compelling summary of your career..."></textarea>
-                        </div>
-
-                        <div class="step-content hidden" id="step-3">
-                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Work Experience</h2>
-                            <div id="experience-list" class="space-y-4"></div>
-                            <button id="add-experience" class="mt-4 inline-flex items-center px-4 py-2 rounded-xl border border-violet-200 bg-violet-50 text-violet-700 font-semibold">+ Add Project</button>
-                        </div>
-
-                        <div class="step-content hidden" id="step-4">
-                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Education & Skills</h2>
-                            <div id="education-list" class="space-y-4 mb-8"></div>
-                            <button id="add-education" class="mb-8 inline-flex items-center px-4 py-2 rounded-xl border border-violet-200 bg-violet-50 text-violet-700 font-semibold">+ Add Education</button>
-                            <div id="skills-list" class="space-y-3"></div>
-                            <button id="add-skill" class="mt-4 inline-flex items-center px-4 py-2 rounded-xl border border-violet-200 bg-violet-50 text-violet-700 font-semibold">+ Add Skill</button>
-                        </div>
-
-                        <div class="step-content hidden" id="step-5">
-                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Projects</h2>
-                            <div id="projects-list" class="space-y-4 mb-8"></div>
-                            <button id="add-project" class="mb-8 inline-flex items-center px-4 py-2 rounded-xl border border-violet-200 bg-violet-50 text-violet-700 font-semibold">+ Add Project</button>
-
-                            <h2 class="text-2xl font-bold text-slate-800 mb-6">Select Template</h2>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div class="template-card cursor-pointer p-0 selected" data-template="ats_classic">
-                                    <div class="h-32 bg-slate-200 flex items-center justify-center text-slate-500 text-sm">ATS Classic</div>
-                                    <div class="p-4">
-                                        <div class="font-semibold text-center text-slate-800">ATS Classic</div>
-                                        <div class="text-sm text-slate-600 text-center">Clean, scannable format</div>
-                                    </div>
-                                </div>
-                                <div class="template-card cursor-pointer p-0" data-template="canva_modern_1">
-                                    <div class="h-32 bg-violet-100 flex items-center justify-center text-violet-500 text-sm">Modern 1</div>
-                                    <div class="p-4">
-                                        <div class="font-semibold text-center text-slate-800">Modern Design 1</div>
-                                        <div class="text-sm text-slate-600 text-center">Two-column layout</div>
-                                    </div>
-                                </div>
-                                <div class="template-card cursor-pointer p-0" data-template="canva_creative_2">
-                                    <div class="h-32 bg-rose-100 flex items-center justify-center text-rose-500 text-sm">Creative 2</div>
-                                    <div class="p-4">
-                                        <div class="font-semibold text-center text-slate-800">Creative Design 2</div>
-                                        <div class="text-sm text-slate-600 text-center">Accent header banner</div>
-                                    </div>
-                                </div>
-                                <div class="template-card cursor-pointer p-0" data-template="canva_minimal_3">
-                                    <div class="h-32 bg-sky-100 flex items-center justify-center text-sky-500 text-sm">Minimal 3</div>
-                                    <div class="p-4">
-                                        <div class="font-semibold text-center text-slate-800">Minimalist Design 3</div>
-                                        <div class="text-sm text-slate-600 text-center">Clean borders</div>
-                                    </div>
-                                </div>
-                                <div class="template-card cursor-pointer p-0 md:col-span-2" data-template="canva_executive_4">
-                                    <div class="h-32 bg-slate-900 flex items-center justify-center text-slate-100 text-sm">Executive 4</div>
-                                    <div class="p-4">
-                                        <div class="font-semibold text-center text-slate-800">Executive Design 4</div>
-                                        <div class="text-sm text-slate-600 text-center">Formal dark header</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex justify-between mt-8 pt-4 border-t border-slate-200">
-                            <button id="prev-btn" class="hidden px-6 py-3 border border-violet-300 text-violet-700 rounded-xl font-semibold bg-violet-50">Previous</button>
-                            <button id="next-btn" class="ml-auto px-6 py-3 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-700 transition">Next</button>
-                            <button id="submit-btn" class="hidden ml-auto px-6 py-3 bg-violet-600 text-white rounded-xl font-semibold hover:bg-violet-500 transition">Download PDF</button>
-                        </div>
-                    </div>
-
-                    <aside class="p-6 lg:p-8 bg-slate-50">
-                        <div class="mb-3 flex items-center justify-between">
-                            <div class="text-sm text-slate-500 uppercase tracking-wide">Live preview</div>
-                            <div class="text-xs text-slate-500">1 of 8</div>
-                        </div>
-                        <div class="resume-preview">
-                            <div class="header-bar flex items-center justify-between">
-                                <div class="text-sm font-semibold text-slate-700">Resume template</div>
-                                <div class="px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-semibold">Live</div>
-                            </div>
-                            <div class="space-y-4 text-slate-700">
-                                <div class="flex items-center space-x-3">
-                                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500"></div>
-                                    <div>
-                                        <div id="preview-name" class="text-2xl font-bold text-slate-800">Your Name</div>
-                                        <div id="preview-role" class="text-xs uppercase tracking-[0.2em] text-slate-500">Professional Summary</div>
-                                    </div>
-                                </div>
-                                <div class="text-sm leading-6 text-slate-600" id="preview-summary">
-                                    Add a professional summary to see your resume preview update in real time.
-                                </div>
-                                <div class="grid grid-cols-2 gap-4 text-xs">
-                                    <div>
-                                        <div class="font-semibold uppercase text-slate-500 mb-1">Experience</div>
-                                        <div class="text-slate-700">0 roles</div>
-                                    </div>
-                                    <div>
-                                        <div class="font-semibold uppercase text-slate-500 mb-1">Skills</div>
-                                        <div class="text-slate-700">0 listed</div>
-                                    </div>
-                                </div>
-                                <div class="border-t border-slate-200 pt-3">
-                                    <div class="text-xs font-semibold uppercase text-slate-500 mb-2">Highlights</div>
-                                    <ul class="space-y-2 text-sm text-slate-600">
-                                        <li>• ATS-friendly format</li>
-                                        <li>• Clean layout</li>
-                                        <li>• PDF ready</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </aside>
+                <div class="header-user">
+                    <img id="user-avatar" class="user-avatar" src="" alt="">
+                    <span id="user-name" class="user-name"></span>
+                    <button id="btn-signout" class="btn-sign-out">Sign Out</button>
                 </div>
             </div>
+        </header>
+
+        <!-- Step Progress -->
+        <nav class="step-progress">
+            <div class="step-progress-bar">
+                <div class="step-item">
+                    <div class="step-dot active" data-step="1"><span>1</span></div>
+                    <div class="step-label active">Details</div>
+                </div>
+                <div class="step-connector" data-connector="1"></div>
+                <div class="step-item">
+                    <div class="step-dot" data-step="2"><span>2</span></div>
+                    <div class="step-label">Photo</div>
+                </div>
+                <div class="step-connector" data-connector="2"></div>
+                <div class="step-item">
+                    <div class="step-dot" data-step="3"><span>3</span></div>
+                    <div class="step-label">Template</div>
+                </div>
+                <div class="step-connector" data-connector="3"></div>
+                <div class="step-item">
+                    <div class="step-dot" data-step="4"><span>4</span></div>
+                    <div class="step-label">Preview</div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Builder -->
+        <main class="builder-layout">
+
+            <!-- FORM PANEL -->
+            <div class="form-panel">
+                <div class="form-panel-inner">
+
+                    <!-- Honeypot (anti-spam) -->
+                    <div class="hp-field">
+                        <label>Leave blank</label>
+                        <input type="text" id="hp-field" tabindex="-1" autocomplete="off">
+                    </div>
+
+                    <!-- ========== STEP 1: YOUR DETAILS ========== -->
+                    <div class="step-content" id="step-1">
+                        <h2 class="step-title">Your Details</h2>
+                        <p class="step-subtitle">Fill in your resume information below.</p>
+
+                        <!-- Contact Info -->
+                        <div class="form-section">
+                            <div class="form-section-header">
+                                <div class="form-section-title"><span class="icon">👤</span> Contact Information</div>
+                                <span class="form-section-badge">Required</span>
+                            </div>
+                            <div class="form-grid cols-2">
+                                <div class="form-group full-width">
+                                    <label class="form-label">Full Name <span class="required">*</span></label>
+                                    <input type="text" id="fullName" class="form-input" placeholder="Juan Dela Cruz">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Email <span class="required">*</span></label>
+                                    <input type="email" id="email" class="form-input" placeholder="juan@email.com">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Phone <span class="required">*</span></label>
+                                    <input type="tel" id="phone" class="form-input" placeholder="+63 912 345 6789">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Location</label>
+                                    <input type="text" id="location" class="form-input" placeholder="Manila, PH">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">LinkedIn</label>
+                                    <input type="url" id="linkedin" class="form-input" placeholder="linkedin.com/in/juandelacruz">
+                                </div>
+                                <div class="form-group full-width">
+                                    <label class="form-label">Website / Portfolio</label>
+                                    <input type="url" id="website" class="form-input" placeholder="yoursite.com">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Summary -->
+                        <div class="form-section">
+                            <div class="form-section-header">
+                                <div class="form-section-title"><span class="icon">📝</span> Professional Summary</div>
+                            </div>
+                            <div class="form-group">
+                                <textarea id="summary" class="form-textarea" rows="4" placeholder="Write a brief summary about yourself, your career goals, and key strengths..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Experience -->
+                        <div class="form-section">
+                            <div class="form-section-header">
+                                <div class="form-section-title"><span class="icon">💼</span> Work Experience</div>
+                            </div>
+                            <div class="entries-list" id="experience-list"></div>
+                            <button type="button" id="btn-add-experience" class="btn-add-entry">+ Add Experience</button>
+                        </div>
+
+                        <!-- Education -->
+                        <div class="form-section">
+                            <div class="form-section-header">
+                                <div class="form-section-title"><span class="icon">🎓</span> Education</div>
+                            </div>
+                            <div class="entries-list" id="education-list"></div>
+                            <button type="button" id="btn-add-education" class="btn-add-entry">+ Add Education</button>
+                        </div>
+
+                        <!-- Skills -->
+                        <div class="form-section">
+                            <div class="form-section-header">
+                                <div class="form-section-title"><span class="icon">⚡</span> Skills</div>
+                            </div>
+                            <div class="entries-list" id="skills-list"></div>
+                            <button type="button" id="btn-add-skill" class="btn-add-entry">+ Add Skill</button>
+                        </div>
+
+                        <!-- Projects -->
+                        <div class="form-section">
+                            <div class="form-section-header">
+                                <div class="form-section-title"><span class="icon">🚀</span> Projects</div>
+                            </div>
+                            <div class="entries-list" id="projects-list"></div>
+                            <button type="button" id="btn-add-project" class="btn-add-entry">+ Add Project</button>
+                        </div>
+                    </div>
+
+                    <!-- ========== STEP 2: PHOTO ========== -->
+                    <div class="step-content hidden" id="step-2">
+                        <h2 class="step-title">Profile Photo</h2>
+                        <p class="step-subtitle">Upload a professional photo (optional).</p>
+
+                        <div class="photo-upload-area" id="photo-drop-area">
+                            <div class="photo-upload-icon">📷</div>
+                            <div class="photo-upload-text">
+                                <h3>Click or drag a photo here</h3>
+                                <p>JPG or PNG, max 5 MB</p>
+                            </div>
+                            <input type="file" id="photo-input" accept="image/*" style="display:none;">
+                            <img id="photo-preview-img" class="photo-preview-img hidden" src="" alt="Preview">
+                        </div>
+                        <div style="text-align:center;margin-top:16px;">
+                            <button type="button" id="btn-remove-photo" class="btn-skip-photo hidden">Remove Photo</button>
+                        </div>
+                    </div>
+
+                    <!-- ========== STEP 3: TEMPLATE ========== -->
+                    <div class="step-content hidden" id="step-3">
+                        <h2 class="step-title">Choose a Design</h2>
+                        <p class="step-subtitle">Pick the template that best fits your style.</p>
+
+                        <div class="template-grid">
+                            <div class="tpl-card selected" data-template="ats_classic">
+                                <div class="tpl-card-preview tpl-preview-classic">
+                                    <div class="tpl-mini-resume">
+                                        <div class="mini-line title"></div>
+                                        <div class="mini-line medium"></div>
+                                        <div class="mini-line long"></div>
+                                        <div class="mini-line short"></div>
+                                        <div class="mini-line long"></div>
+                                        <div class="mini-line medium"></div>
+                                    </div>
+                                </div>
+                                <div class="tpl-card-info">
+                                    <h4>ATS Classic</h4>
+                                    <p>Clean, scannable format</p>
+                                </div>
+                            </div>
+
+                            <div class="tpl-card" data-template="canva_modern_1">
+                                <div class="tpl-card-preview tpl-preview-modern">
+                                    <div class="tpl-mini-resume" style="display:flex;gap:4px;">
+                                        <div style="width:30px;background:#312E81;border-radius:2px;"></div>
+                                        <div style="flex:1;">
+                                            <div class="mini-line title"></div>
+                                            <div class="mini-line long"></div>
+                                            <div class="mini-line medium"></div>
+                                            <div class="mini-line short"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tpl-card-info">
+                                    <h4>Modern Two-Column</h4>
+                                    <p>Sidebar with accent color</p>
+                                </div>
+                            </div>
+
+                            <div class="tpl-card" data-template="canva_creative_2">
+                                <div class="tpl-card-preview tpl-preview-creative">
+                                    <div class="tpl-mini-resume">
+                                        <div style="background:linear-gradient(135deg,#BE185D,#9333EA);height:18px;border-radius:2px 2px 0 0;margin:-10px -10px 6px;padding:0;"></div>
+                                        <div class="mini-line medium"></div>
+                                        <div class="mini-line long"></div>
+                                        <div class="mini-line short"></div>
+                                        <div class="mini-line long"></div>
+                                    </div>
+                                </div>
+                                <div class="tpl-card-info">
+                                    <h4>Creative Banner</h4>
+                                    <p>Bold colored header</p>
+                                </div>
+                            </div>
+
+                            <div class="tpl-card" data-template="canva_minimal_3">
+                                <div class="tpl-card-preview tpl-preview-minimal">
+                                    <div class="tpl-mini-resume" style="text-align:center;">
+                                        <div class="mini-line title" style="margin:0 auto 4px;width:50%;"></div>
+                                        <div class="mini-line" style="margin:0 auto 6px;width:60%;height:1px;background:#D1D5DB;"></div>
+                                        <div class="mini-line long" style="margin:0 auto 3px;"></div>
+                                        <div class="mini-line medium" style="margin:0 auto 3px;"></div>
+                                        <div class="mini-line short" style="margin:0 auto;"></div>
+                                    </div>
+                                </div>
+                                <div class="tpl-card-info">
+                                    <h4>Minimal Elegant</h4>
+                                    <p>Understated sophistication</p>
+                                </div>
+                            </div>
+
+                            <div class="tpl-card" data-template="canva_executive_4" style="grid-column: 1 / -1;">
+                                <div class="tpl-card-preview tpl-preview-executive">
+                                    <div class="tpl-mini-resume">
+                                        <div style="background:#0F172A;height:18px;border-radius:2px 2px 0 0;margin:-10px -10px 2px;"></div>
+                                        <div style="height:2px;background:linear-gradient(90deg,#D4AF37,#F4D03F);margin:0 -10px 6px;"></div>
+                                        <div class="mini-line medium"></div>
+                                        <div class="mini-line long"></div>
+                                        <div class="mini-line short"></div>
+                                    </div>
+                                </div>
+                                <div class="tpl-card-info">
+                                    <h4>Executive Dark</h4>
+                                    <p>Formal dark header with gold accent</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ========== STEP 4: PREVIEW & ORDER ========== -->
+                    <div class="step-content hidden" id="step-4">
+                        <h2 class="step-title">Preview & Generate Order</h2>
+                        <p class="step-subtitle">Review your resume, then generate your order to receive a Ref ID.</p>
+
+                        <div id="rate-limit-banner" class="rate-limit-banner hidden">
+                            ⚠️ You've reached the order limit. Please wait before submitting again.
+                        </div>
+
+                        <div id="full-preview" class="full-preview-container">
+                            <div id="full-preview-inner" class="full-preview-inner"></div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Step Navigation -->
+                <div class="step-nav">
+                    <button type="button" id="btn-prev" class="btn-prev hidden">← Previous</button>
+                    <button type="button" id="btn-next" class="btn-next" style="margin-left:auto;">Next →</button>
+                    <button type="button" id="btn-generate" class="btn-generate hidden" style="margin-left:auto;">🎯 Generate Order</button>
+                </div>
+            </div>
+
+            <!-- PREVIEW PANEL (Desktop side preview) -->
+            <aside class="preview-panel">
+                <div class="preview-wrapper">
+                    <div class="preview-header">
+                        <span class="label">Live Preview</span>
+                        <span class="badge">● Live</span>
+                    </div>
+                    <div class="preview-scale-container">
+                        <div id="side-preview-inner" class="preview-scale-inner"></div>
+                    </div>
+                </div>
+            </aside>
+
+        </main>
+
+        <!-- Mobile Preview Toggle -->
+        <button type="button" id="btn-mobile-preview" class="btn-mobile-preview">👁</button>
+
+    </div>
+
+    <!-- ===========================
+         REF ID MODAL
+         =========================== -->
+    <div id="ref-modal" class="modal-overlay hidden">
+        <div class="ref-modal">
+            <div class="success-icon">✅</div>
+            <h2>Order Generated!</h2>
+            <p class="ref-description">Show this reference code to the shop staff to get your resume printed.</p>
+            <div id="ref-id-display" class="ref-id-display">#REF-0000</div>
+            <button type="button" id="btn-copy-ref" class="btn-copy-ref">📋 Copy Code</button>
+            <div class="ref-instructions">
+                <strong>What happens next?</strong><br>
+                1. Show the Ref ID to the shop staff<br>
+                2. They will print your resume<br>
+                3. Collect your printed copy!
+            </div>
+            <button type="button" id="btn-close-ref" class="btn-close-modal">Done</button>
         </div>
-    </main>
+    </div>
 
+    <!-- ===========================
+         MOBILE PREVIEW OVERLAY
+         =========================== -->
+    <div id="mobile-preview-overlay" class="mobile-preview-overlay hidden">
+        <div class="mobile-preview-content">
+            <button type="button" class="mobile-preview-close" id="btn-close-mobile-preview">✕</button>
+            <div id="mobile-preview-inner" style="overflow:auto;"></div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Auto-save indicator -->
+    <div id="auto-save-badge" class="auto-save-badge hidden">✓ Draft saved</div>
+
+    <!-- Scripts -->
+    <script src="./static/js/templates.js"></script>
     <script src="./static/js/app.js"></script>
 </body>
 </html>

@@ -1,11 +1,17 @@
-// Firebase Configuration - Replace with your actual Firebase config
+// ===========================================
+//  ARTEX RESUME BUILDER — APPLICATION LOGIC
+//  Firebase Auth + Firestore, 4-step flow,
+//  Ref ID ordering, rate limiting, anti-spam
+// ===========================================
+
+// --- Firebase Configuration ---
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyCqxKzBeqcqVu61oGJGvqpOeJE85vHD9IU",
+    authDomain: "resume-builder-57506.firebaseapp.com",
+    projectId: "resume-builder-57506",
+    storageBucket: "resume-builder-57506.firebasestorage.app",
+    messagingSenderId: "913860230219",
+    appId: "1:913860230219:web:c4f33ba46a14436c2961ce"
 };
 
 // Initialize Firebase
@@ -13,10 +19,12 @@ if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const auth = firebase.auth();
+const db = firebase.firestore();
 
-// Global state
+// --- Global State ---
 let currentUser = null;
 let currentStep = 1;
+const TOTAL_STEPS = 4;
 let selectedTemplate = 'ats_classic';
 let resumeData = {
     personalInfo: {},
@@ -27,471 +35,774 @@ let resumeData = {
     projects: []
 };
 let autoSaveTimeout = null;
+let photoDataUrl = '';
 
-// DOM Elements
-const loginPrompt = document.getElementById('login-prompt');
-const builderSection = document.getElementById('builder-section');
-const mainLoginBtn = document.getElementById('main-login-btn');
+// Rate limiting: max 3 orders per hour per device
+const RATE_LIMIT_MAX = 3;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const COOLDOWN_SECONDS = 60;
+let cooldownTimer = null;
 
-// Google Sign-In
-async function signInWithGoogle() {
+// --- DOM Elements ---
+const loginScreen = document.getElementById('login-screen');
+const appShell = document.getElementById('app-shell');
+const btnLogin = document.getElementById('btn-login');
+const btnSignout = document.getElementById('btn-signout');
+const userAvatar = document.getElementById('user-avatar');
+const userName = document.getElementById('user-name');
+const btnPrev = document.getElementById('btn-prev');
+const btnNext = document.getElementById('btn-next');
+const btnGenerate = document.getElementById('btn-generate');
+const refModal = document.getElementById('ref-modal');
+const refIdDisplay = document.getElementById('ref-id-display');
+const btnCopyRef = document.getElementById('btn-copy-ref');
+const btnCloseRef = document.getElementById('btn-close-ref');
+const rateLimitBanner = document.getElementById('rate-limit-banner');
+const autoSaveBadge = document.getElementById('auto-save-badge');
+
+// ===========================================
+//  AUTH
+// ===========================================
+btnLogin.addEventListener('click', async () => {
     try {
         const provider = new firebase.auth.GoogleAuthProvider();
-        const result = await auth.signInWithPopup(provider);
-        console.log('Signed in:', result.user);
+        await auth.signInWithPopup(provider);
     } catch (error) {
         console.error('Sign-in error:', error);
-        alert('Sign-in failed. Please configure Firebase credentials.');
-    }
-}
-
-// Auth State Observer
-auth.onAuthStateChanged((user) => {
-    if (user) {
-        currentUser = user;
-        loginPrompt.classList.add('hidden');
-        builderSection.classList.remove('hidden');
-        loadDraft();
-    } else {
-        currentUser = null;
-        loginPrompt.classList.remove('hidden');
-        builderSection.classList.add('hidden');
+        showToast('Sign-in failed. Please try again.', 'error');
     }
 });
 
-mainLoginBtn.addEventListener('click', signInWithGoogle);
+btnSignout.addEventListener('click', async () => {
+    await auth.signOut();
+});
 
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        currentUser = user;
+        loginScreen.classList.add('hidden');
+        appShell.classList.remove('hidden');
 
-// Step Navigation
-const prevBtn = document.getElementById('prev-btn');
-const nextBtn = document.getElementById('next-btn');
-const submitBtn = document.getElementById('submit-btn');
+        // Set user info in header
+        userAvatar.src = user.photoURL || '';
+        userName.textContent = user.displayName || user.email;
 
-prevBtn.addEventListener('click', () => {
+        // Pre-fill name and email if form is empty
+        const nameInput = document.getElementById('fullName');
+        const emailInput = document.getElementById('email');
+        if (!nameInput.value && user.displayName) nameInput.value = user.displayName;
+        if (!emailInput.value && user.email) emailInput.value = user.email;
+
+        loadDraft();
+        updatePreview();
+    } else {
+        currentUser = null;
+        loginScreen.classList.remove('hidden');
+        appShell.classList.add('hidden');
+    }
+});
+
+// ===========================================
+//  STEP NAVIGATION
+// ===========================================
+btnPrev.addEventListener('click', () => {
     if (currentStep > 1) {
         currentStep--;
         updateStepUI();
     }
 });
 
-nextBtn.addEventListener('click', () => {
-    if (currentStep < 5) {
+btnNext.addEventListener('click', () => {
+    if (currentStep < TOTAL_STEPS) {
         currentStep++;
         updateStepUI();
     }
 });
 
-submitBtn.addEventListener('click', submitOrder);
+btnGenerate.addEventListener('click', generateOrder);
 
 function updateStepUI() {
-    // Hide all steps
-    document.querySelectorAll('.step-content').forEach(step => {
-        step.classList.add('hidden');
-    });
-    
-    // Show current step
+    // Hide all step content
+    document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
     document.getElementById(`step-${currentStep}`).classList.remove('hidden');
-    
-    // Update step indicators
-    document.querySelectorAll('.step-indicator').forEach(indicator => {
-        const step = parseInt(indicator.dataset.step);
-        indicator.classList.remove('active', 'completed');
-        if (step < currentStep) {
-            indicator.classList.add('completed');
-        } else if (step === currentStep) {
-            indicator.classList.add('active');
-        }
+
+    // Update step dots
+    document.querySelectorAll('.step-dot').forEach(dot => {
+        const step = parseInt(dot.dataset.step);
+        dot.classList.remove('active', 'completed');
+        if (step < currentStep) dot.classList.add('completed');
+        else if (step === currentStep) dot.classList.add('active');
     });
-    
-    // Update buttons
-    prevBtn.classList.toggle('hidden', currentStep === 1);
-    nextBtn.classList.toggle('hidden', currentStep === 5);
-    submitBtn.classList.toggle('hidden', currentStep !== 5);
+
+    // Update step labels
+    document.querySelectorAll('.step-label').forEach((label, i) => {
+        const step = i + 1;
+        label.classList.remove('active', 'completed');
+        if (step < currentStep) label.classList.add('completed');
+        else if (step === currentStep) label.classList.add('active');
+    });
+
+    // Update connectors
+    document.querySelectorAll('.step-connector').forEach(conn => {
+        const connStep = parseInt(conn.dataset.connector);
+        conn.classList.toggle('completed', connStep < currentStep);
+    });
+
+    // Update nav buttons
+    btnPrev.classList.toggle('hidden', currentStep === 1);
+    btnNext.classList.toggle('hidden', currentStep === TOTAL_STEPS);
+    btnGenerate.classList.toggle('hidden', currentStep !== TOTAL_STEPS);
+
+    // If step 4, render full preview
+    if (currentStep === TOTAL_STEPS) {
+        renderFullPreview();
+        checkRateLimit();
+    }
+
+    // Scroll form to top
+    document.querySelector('.form-panel-inner').scrollTop = 0;
 }
 
-// Template Selection
-document.querySelectorAll('.template-card').forEach(card => {
+// ===========================================
+//  TEMPLATE SELECTION
+// ===========================================
+document.querySelectorAll('.tpl-card').forEach(card => {
     card.addEventListener('click', () => {
-        document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+        document.querySelectorAll('.tpl-card').forEach(c => c.classList.remove('selected'));
         card.classList.add('selected');
         selectedTemplate = card.dataset.template;
+        updatePreview();
     });
 });
 
-// Auto-save functionality
-function setupAutoSave() {
-    const inputs = document.querySelectorAll('input, textarea');
-    inputs.forEach(input => {
-        input.addEventListener('input', () => {
-            clearTimeout(autoSaveTimeout);
-            autoSaveTimeout = setTimeout(saveDraft, 1000);
-        });
+// ===========================================
+//  DYNAMIC FORM ENTRIES
+// ===========================================
+
+// --- Experience ---
+document.getElementById('btn-add-experience').addEventListener('click', () => addExperienceEntry());
+
+function addExperienceEntry(data = {}) {
+    const container = document.getElementById('experience-list');
+    const div = document.createElement('div');
+    div.className = 'entry-card';
+    div.innerHTML = `
+        <button type="button" class="btn-remove-entry" onclick="this.closest('.entry-card').remove(); debounceSave();">✕</button>
+        <div class="form-grid cols-2">
+            <div class="form-group">
+                <label class="form-label">Job Title</label>
+                <input type="text" class="form-input exp-title" value="${escAttr(data.title)}" placeholder="Software Engineer">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Company</label>
+                <input type="text" class="form-input exp-company" value="${escAttr(data.company)}" placeholder="Tech Corp">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Start Date</label>
+                <input type="text" class="form-input exp-start" value="${escAttr(data.startDate)}" placeholder="Jan 2020">
+            </div>
+            <div class="form-group">
+                <label class="form-label">End Date</label>
+                <input type="text" class="form-input exp-end" value="${escAttr(data.endDate)}" placeholder="Present">
+            </div>
+            <div class="form-group full-width">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea exp-desc" rows="3" placeholder="Describe your responsibilities (one per line)...">${escHtml(data.description)}</textarea>
+            </div>
+        </div>
+    `;
+    container.appendChild(div);
+    bindAutoSave(div);
+}
+
+// --- Education ---
+document.getElementById('btn-add-education').addEventListener('click', () => addEducationEntry());
+
+function addEducationEntry(data = {}) {
+    const container = document.getElementById('education-list');
+    const div = document.createElement('div');
+    div.className = 'entry-card';
+    div.innerHTML = `
+        <button type="button" class="btn-remove-entry" onclick="this.closest('.entry-card').remove(); debounceSave();">✕</button>
+        <div class="form-grid cols-2">
+            <div class="form-group">
+                <label class="form-label">Degree</label>
+                <input type="text" class="form-input edu-degree" value="${escAttr(data.degree)}" placeholder="BS Computer Science">
+            </div>
+            <div class="form-group">
+                <label class="form-label">School</label>
+                <input type="text" class="form-input edu-school" value="${escAttr(data.school)}" placeholder="University">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Start</label>
+                <input type="text" class="form-input edu-start" value="${escAttr(data.startDate)}" placeholder="2016">
+            </div>
+            <div class="form-group">
+                <label class="form-label">End</label>
+                <input type="text" class="form-input edu-end" value="${escAttr(data.endDate)}" placeholder="2020">
+            </div>
+            <div class="form-group">
+                <label class="form-label">GPA</label>
+                <input type="text" class="form-input edu-gpa" value="${escAttr(data.gpa)}" placeholder="3.8">
+            </div>
+        </div>
+    `;
+    container.appendChild(div);
+    bindAutoSave(div);
+}
+
+// --- Skills ---
+document.getElementById('btn-add-skill').addEventListener('click', () => addSkillEntry());
+
+function addSkillEntry(data = {}) {
+    const container = document.getElementById('skills-list');
+    const div = document.createElement('div');
+    div.className = 'entry-card';
+    div.style.padding = '12px 16px';
+    div.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;">
+            <input type="text" class="form-input skill-name" value="${escAttr(data.name)}" placeholder="e.g. JavaScript, Python, Photoshop" style="flex:1;">
+            <button type="button" class="btn-remove-entry" style="position:static;width:28px;height:28px;" onclick="this.closest('.entry-card').remove(); debounceSave();">✕</button>
+        </div>
+    `;
+    container.appendChild(div);
+    bindAutoSave(div);
+}
+
+// --- Projects ---
+document.getElementById('btn-add-project').addEventListener('click', () => addProjectEntry());
+
+function addProjectEntry(data = {}) {
+    const container = document.getElementById('projects-list');
+    const div = document.createElement('div');
+    div.className = 'entry-card';
+    div.innerHTML = `
+        <button type="button" class="btn-remove-entry" onclick="this.closest('.entry-card').remove(); debounceSave();">✕</button>
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Project Name</label>
+                <input type="text" class="form-input proj-name" value="${escAttr(data.name)}" placeholder="My Project">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea proj-desc" rows="3" placeholder="Describe what you built...">${escHtml(data.description)}</textarea>
+            </div>
+        </div>
+    `;
+    container.appendChild(div);
+    bindAutoSave(div);
+}
+
+// ===========================================
+//  PHOTO UPLOAD
+// ===========================================
+const photoDropArea = document.getElementById('photo-drop-area');
+const photoInput = document.getElementById('photo-input');
+const photoPreviewImg = document.getElementById('photo-preview-img');
+const btnRemovePhoto = document.getElementById('btn-remove-photo');
+
+photoDropArea.addEventListener('click', () => photoInput.click());
+
+photoDropArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    photoDropArea.style.borderColor = 'var(--primary)';
+});
+
+photoDropArea.addEventListener('dragleave', () => {
+    photoDropArea.style.borderColor = '';
+});
+
+photoDropArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    photoDropArea.style.borderColor = '';
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) handlePhotoFile(file);
+});
+
+photoInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) handlePhotoFile(file);
+});
+
+function handlePhotoFile(file) {
+    if (file.size > 5 * 1024 * 1024) {
+        showToast('Photo must be under 5 MB.', 'error');
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        photoDataUrl = e.target.result;
+        photoPreviewImg.src = photoDataUrl;
+        photoPreviewImg.classList.remove('hidden');
+        photoDropArea.classList.add('has-photo');
+        btnRemovePhoto.classList.remove('hidden');
+        // Hide the upload icon & text when photo is shown
+        photoDropArea.querySelector('.photo-upload-icon').classList.add('hidden');
+        photoDropArea.querySelector('.photo-upload-text').classList.add('hidden');
+        saveDraft();
+        updatePreview();
+    };
+    reader.readAsDataURL(file);
+}
+
+btnRemovePhoto.addEventListener('click', () => {
+    photoDataUrl = '';
+    photoPreviewImg.src = '';
+    photoPreviewImg.classList.add('hidden');
+    photoDropArea.classList.remove('has-photo');
+    btnRemovePhoto.classList.add('hidden');
+    photoDropArea.querySelector('.photo-upload-icon').classList.remove('hidden');
+    photoDropArea.querySelector('.photo-upload-text').classList.remove('hidden');
+    photoInput.value = '';
+    saveDraft();
+    updatePreview();
+});
+
+// ===========================================
+//  AUTO-SAVE & DRAFT
+// ===========================================
+function bindAutoSave(container) {
+    (container || document).querySelectorAll('input, textarea').forEach(el => {
+        el.addEventListener('input', debounceSave);
     });
+}
+
+function debounceSave() {
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(() => {
+        saveDraft();
+        updatePreview();
+    }, 800);
 }
 
 function saveDraft() {
-    collectFormData();
-    localStorage.setItem('resumeDraft', JSON.stringify(resumeData));
-    showAutoSaveIndicator();
+    collectAllFormData();
+    localStorage.setItem('artex_resume_draft', JSON.stringify(resumeData));
+    showAutoSave();
 }
 
 function loadDraft() {
-    const savedDraft = localStorage.getItem('resumeDraft');
-    if (savedDraft) {
+    const saved = localStorage.getItem('artex_resume_draft');
+    if (saved) {
         try {
-            resumeData = JSON.parse(savedDraft);
-            populateFormData();
-        } catch (error) {
-            console.error('Load draft error:', error);
+            resumeData = JSON.parse(saved);
+            populateForm();
+        } catch (e) {
+            console.error('Load draft error:', e);
         }
     }
 }
 
-function showAutoSaveIndicator() {
-    const indicator = document.getElementById('auto-save-indicator');
-    indicator.classList.remove('hidden');
-    setTimeout(() => {
-        indicator.classList.add('hidden');
-    }, 2000);
+function showAutoSave() {
+    autoSaveBadge.classList.remove('hidden');
+    // Remove and re-add to restart animation
+    autoSaveBadge.style.animation = 'none';
+    autoSaveBadge.offsetHeight; // trigger reflow
+    autoSaveBadge.style.animation = '';
+    setTimeout(() => autoSaveBadge.classList.add('hidden'), 2000);
 }
 
-// Form Data Collection
-function collectFormData() {
-    resumeData.personalInfo = {
-        fullName: document.getElementById('fullName').value,
-        email: document.getElementById('email').value,
-        phone: document.getElementById('phone').value,
-        location: document.getElementById('location').value,
-        linkedin: document.getElementById('linkedin').value,
-        website: document.getElementById('website').value,
-        photoUrl: document.getElementById('photo-preview-img').src || ''
-    };
-    resumeData.summary = document.getElementById('summary').value;
-    
-    // Experience, education, skills, projects are collected separately
-}
-
-function populateFormData() {
-    if (resumeData.personalInfo) {
-        document.getElementById('fullName').value = resumeData.personalInfo.fullName || '';
-        document.getElementById('email').value = resumeData.personalInfo.email || '';
-        document.getElementById('phone').value = resumeData.personalInfo.phone || '';
-        document.getElementById('location').value = resumeData.personalInfo.location || '';
-        document.getElementById('linkedin').value = resumeData.personalInfo.linkedin || '';
-        document.getElementById('website').value = resumeData.personalInfo.website || '';
-        
-        if (resumeData.personalInfo.photoUrl) {
-            document.getElementById('photo-preview-img').src = resumeData.personalInfo.photoUrl;
-            document.getElementById('photo-preview').classList.remove('hidden');
-        }
-    }
-    
-    document.getElementById('summary').value = resumeData.summary || '';
-    
-    // Populate experience, education, skills, projects
-    resumeData.experience.forEach(exp => addExperienceField(exp));
-    resumeData.education.forEach(edu => addEducationField(edu));
-    resumeData.skills.forEach(skill => addSkillField(skill));
-    resumeData.projects.forEach(proj => addProjectField(proj));
-}
-
-// Experience Fields
-document.getElementById('add-experience').addEventListener('click', () => addExperienceField());
-
-function addExperienceField(data = {}) {
-    const container = document.getElementById('experience-list');
-    const div = document.createElement('div');
-    div.className = 'bg-gray-50 p-4 rounded-lg';
-    div.innerHTML = `
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
-                <input type="text" class="exp-title w-full px-3 py-2 border rounded-lg" value="${data.title || ''}" placeholder="Software Engineer">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Company</label>
-                <input type="text" class="exp-company w-full px-3 py-2 border rounded-lg" value="${data.company || ''}" placeholder="Tech Company">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                <input type="text" class="exp-start w-full px-3 py-2 border rounded-lg" value="${data.startDate || ''}" placeholder="Jan 2020">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                <input type="text" class="exp-end w-full px-3 py-2 border rounded-lg" value="${data.endDate || ''}" placeholder="Present">
-            </div>
-            <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea class="exp-desc w-full px-3 py-2 border rounded-lg" rows="3" placeholder="Describe your responsibilities...">${data.description || ''}</textarea>
-            </div>
-        </div>
-        <button class="mt-2 text-red-600 hover:text-red-800 text-sm" onclick="this.parentElement.remove()">Remove</button>
-    `;
-    container.appendChild(div);
-    setupAutoSave();
-}
-
-// Education Fields
-document.getElementById('add-education').addEventListener('click', () => addEducationField());
-
-function addEducationField(data = {}) {
-    const container = document.getElementById('education-list');
-    const div = document.createElement('div');
-    div.className = 'bg-gray-50 p-4 rounded-lg';
-    div.innerHTML = `
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Degree</label>
-                <input type="text" class="edu-degree w-full px-3 py-2 border rounded-lg" value="${data.degree || ''}" placeholder="Bachelor of Science">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">School</label>
-                <input type="text" class="edu-school w-full px-3 py-2 border rounded-lg" value="${data.school || ''}" placeholder="University Name">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                <input type="text" class="edu-start w-full px-3 py-2 border rounded-lg" value="${data.startDate || ''}" placeholder="Sep 2016">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                <input type="text" class="edu-end w-full px-3 py-2 border rounded-lg" value="${data.endDate || ''}" placeholder="May 2020">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">GPA</label>
-                <input type="text" class="edu-gpa w-full px-3 py-2 border rounded-lg" value="${data.gpa || ''}" placeholder="3.8">
-            </div>
-        </div>
-        <button class="mt-2 text-red-600 hover:text-red-800 text-sm" onclick="this.parentElement.remove()">Remove</button>
-    `;
-    container.appendChild(div);
-    setupAutoSave();
-}
-
-// Skills Fields
-document.getElementById('add-skill').addEventListener('click', () => addSkillField());
-
-function addSkillField(data = {}) {
-    const container = document.getElementById('skills-list');
-    const div = document.createElement('div');
-    div.className = 'flex items-center space-x-4';
-    div.innerHTML = `
-        <input type="text" class="skill-name flex-1 px-3 py-2 border rounded-lg" value="${data.name || ''}" placeholder="JavaScript">
-        <button class="text-red-600 hover:text-red-800" onclick="this.parentElement.remove()">Remove</button>
-    `;
-    container.appendChild(div);
-    setupAutoSave();
-}
-
-// Projects Fields
-document.getElementById('add-project').addEventListener('click', () => addProjectField());
-
-function addProjectField(data = {}) {
-    const container = document.getElementById('projects-list');
-    const div = document.createElement('div');
-    div.className = 'bg-gray-50 p-4 rounded-lg';
-    div.innerHTML = `
-        <div class="grid grid-cols-1 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
-                <input type="text" class="proj-name w-full px-3 py-2 border rounded-lg" value="${data.name || ''}" placeholder="My Awesome Project">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea class="proj-desc w-full px-3 py-2 border rounded-lg" rows="3" placeholder="Describe your project...">${data.description || ''}</textarea>
-            </div>
-        </div>
-        <button class="mt-2 text-red-600 hover:text-red-800 text-sm" onclick="this.parentElement.remove()">Remove</button>
-    `;
-    container.appendChild(div);
-    setupAutoSave();
-}
-
-// Photo Upload
-document.getElementById('photo').addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('photo-preview-img').src = e.target.result;
-            document.getElementById('photo-preview').classList.remove('hidden');
-            resumeData.personalInfo.photoUrl = e.target.result;
-            saveDraft();
-        };
-        reader.readAsDataURL(file);
-    }
-});
-
-// Collect all form data for submission
+// ===========================================
+//  FORM DATA COLLECTION
+// ===========================================
 function collectAllFormData() {
-    collectFormData();
-    
-    // Collect experience
+    resumeData.personalInfo = {
+        fullName: val('fullName'),
+        email: val('email'),
+        phone: val('phone'),
+        location: val('location'),
+        linkedin: val('linkedin'),
+        website: val('website'),
+        photoUrl: photoDataUrl || ''
+    };
+    resumeData.summary = val('summary');
+
+    // Experience
     resumeData.experience = [];
-    document.querySelectorAll('#experience-list > div').forEach(div => {
+    document.querySelectorAll('#experience-list > .entry-card').forEach(card => {
         resumeData.experience.push({
-            title: div.querySelector('.exp-title').value,
-            company: div.querySelector('.exp-company').value,
-            startDate: div.querySelector('.exp-start').value,
-            endDate: div.querySelector('.exp-end').value,
-            description: div.querySelector('.exp-desc').value
+            title: card.querySelector('.exp-title')?.value || '',
+            company: card.querySelector('.exp-company')?.value || '',
+            startDate: card.querySelector('.exp-start')?.value || '',
+            endDate: card.querySelector('.exp-end')?.value || '',
+            description: card.querySelector('.exp-desc')?.value || ''
         });
     });
-    
-    // Collect education
+
+    // Education
     resumeData.education = [];
-    document.querySelectorAll('#education-list > div').forEach(div => {
+    document.querySelectorAll('#education-list > .entry-card').forEach(card => {
         resumeData.education.push({
-            degree: div.querySelector('.edu-degree').value,
-            school: div.querySelector('.edu-school').value,
-            startDate: div.querySelector('.edu-start').value,
-            endDate: div.querySelector('.edu-end').value,
-            gpa: div.querySelector('.edu-gpa').value
+            degree: card.querySelector('.edu-degree')?.value || '',
+            school: card.querySelector('.edu-school')?.value || '',
+            startDate: card.querySelector('.edu-start')?.value || '',
+            endDate: card.querySelector('.edu-end')?.value || '',
+            gpa: card.querySelector('.edu-gpa')?.value || ''
         });
     });
-    
-    // Collect skills
+
+    // Skills
     resumeData.skills = [];
-    document.querySelectorAll('#skills-list > div').forEach(div => {
-        resumeData.skills.push({
-            name: div.querySelector('.skill-name').value
-        });
+    document.querySelectorAll('#skills-list > .entry-card').forEach(card => {
+        const name = card.querySelector('.skill-name')?.value || '';
+        if (name.trim()) resumeData.skills.push({ name: name.trim() });
     });
-    
-    // Collect projects
+
+    // Projects
     resumeData.projects = [];
-    document.querySelectorAll('#projects-list > div').forEach(div => {
+    document.querySelectorAll('#projects-list > .entry-card').forEach(card => {
         resumeData.projects.push({
-            name: div.querySelector('.proj-name').value,
-            description: div.querySelector('.proj-desc').value
+            name: card.querySelector('.proj-name')?.value || '',
+            description: card.querySelector('.proj-desc')?.value || ''
         });
     });
-    
+
     resumeData.templateType = selectedTemplate;
 }
 
-// Submit Order - Generate PDF
-async function submitOrder() {
+function populateForm() {
+    const p = resumeData.personalInfo || {};
+    setVal('fullName', p.fullName);
+    setVal('email', p.email);
+    setVal('phone', p.phone);
+    setVal('location', p.location);
+    setVal('linkedin', p.linkedin);
+    setVal('website', p.website);
+    setVal('summary', resumeData.summary);
+
+    if (p.photoUrl) {
+        photoDataUrl = p.photoUrl;
+        photoPreviewImg.src = p.photoUrl;
+        photoPreviewImg.classList.remove('hidden');
+        photoDropArea.classList.add('has-photo');
+        btnRemovePhoto.classList.remove('hidden');
+        photoDropArea.querySelector('.photo-upload-icon').classList.add('hidden');
+        photoDropArea.querySelector('.photo-upload-text').classList.add('hidden');
+    }
+
+    // Clear and re-populate dynamic entries
+    document.getElementById('experience-list').innerHTML = '';
+    document.getElementById('education-list').innerHTML = '';
+    document.getElementById('skills-list').innerHTML = '';
+    document.getElementById('projects-list').innerHTML = '';
+
+    (resumeData.experience || []).forEach(e => addExperienceEntry(e));
+    (resumeData.education || []).forEach(e => addEducationEntry(e));
+    (resumeData.skills || []).forEach(e => addSkillEntry(e));
+    (resumeData.projects || []).forEach(e => addProjectEntry(e));
+
+    // Restore template
+    if (resumeData.templateType) {
+        selectedTemplate = resumeData.templateType;
+        document.querySelectorAll('.tpl-card').forEach(c => {
+            c.classList.toggle('selected', c.dataset.template === selectedTemplate);
+        });
+    }
+}
+
+// ===========================================
+//  LIVE PREVIEW
+// ===========================================
+function updatePreview() {
     collectAllFormData();
-    
-    // Validation
-    if (!resumeData.personalInfo.fullName || !resumeData.personalInfo.email || !resumeData.personalInfo.phone) {
-        alert('Please fill in all required personal information fields.');
-        return;
+    const html = ResumeTemplates.render(selectedTemplate, resumeData);
+
+    // Side preview (desktop)
+    const sideInner = document.getElementById('side-preview-inner');
+    if (sideInner) {
+        sideInner.innerHTML = html;
+        scaleSidePreview();
     }
-    
-    if (!resumeData.summary) {
-        alert('Please provide a professional summary.');
-        return;
-    }
-    
+}
+
+function scaleSidePreview() {
+    const container = document.querySelector('.preview-scale-container');
+    const inner = document.getElementById('side-preview-inner');
+    if (!container || !inner) return;
+    const containerWidth = container.clientWidth;
+    const scale = containerWidth / 794;
+    inner.style.transform = `scale(${scale})`;
+}
+
+function renderFullPreview() {
+    collectAllFormData();
+    const html = ResumeTemplates.render(selectedTemplate, resumeData);
+    const inner = document.getElementById('full-preview-inner');
+    inner.innerHTML = html;
+
+    // Scale to fit
+    requestAnimationFrame(() => {
+        const container = document.getElementById('full-preview');
+        const containerWidth = container.clientWidth;
+        const scale = containerWidth / 794;
+        inner.style.transform = `scale(${scale})`;
+    });
+}
+
+// Observe resize for side preview scaling
+const resizeObserver = new ResizeObserver(() => scaleSidePreview());
+const sideContainer = document.querySelector('.preview-scale-container');
+if (sideContainer) resizeObserver.observe(sideContainer);
+
+// ===========================================
+//  MOBILE PREVIEW
+// ===========================================
+const btnMobilePreview = document.getElementById('btn-mobile-preview');
+const mobileOverlay = document.getElementById('mobile-preview-overlay');
+const btnCloseMobile = document.getElementById('btn-close-mobile-preview');
+
+btnMobilePreview.addEventListener('click', () => {
+    collectAllFormData();
+    const html = ResumeTemplates.render(selectedTemplate, resumeData);
+    const inner = document.getElementById('mobile-preview-inner');
+    inner.innerHTML = `<div style="transform-origin:top left;width:794px;">${html}</div>`;
+
+    // Scale to fit mobile overlay
+    requestAnimationFrame(() => {
+        const content = document.querySelector('.mobile-preview-content');
+        const contentWidth = content.clientWidth;
+        const scale = contentWidth / 794;
+        inner.querySelector('div').style.transform = `scale(${scale})`;
+        inner.style.height = `${1123 * scale}px`;
+    });
+
+    mobileOverlay.classList.remove('hidden');
+});
+
+btnCloseMobile.addEventListener('click', () => {
+    mobileOverlay.classList.add('hidden');
+});
+
+mobileOverlay.addEventListener('click', (e) => {
+    if (e.target === mobileOverlay) mobileOverlay.classList.add('hidden');
+});
+
+// ===========================================
+//  RATE LIMITING
+// ===========================================
+function getRateLimitData() {
     try {
-        await generatePDF();
-        alert('Resume PDF generated successfully!');
+        const data = JSON.parse(localStorage.getItem('artex_rate_limit') || '{"timestamps":[]}');
+        // Clean old timestamps
+        const now = Date.now();
+        data.timestamps = (data.timestamps || []).filter(t => now - t < RATE_LIMIT_WINDOW_MS);
+        return data;
+    } catch {
+        return { timestamps: [] };
+    }
+}
+
+function isRateLimited() {
+    const data = getRateLimitData();
+    return data.timestamps.length >= RATE_LIMIT_MAX;
+}
+
+function recordOrder() {
+    const data = getRateLimitData();
+    data.timestamps.push(Date.now());
+    localStorage.setItem('artex_rate_limit', JSON.stringify(data));
+}
+
+function checkRateLimit() {
+    const limited = isRateLimited();
+    rateLimitBanner.classList.toggle('hidden', !limited);
+    btnGenerate.disabled = limited;
+}
+
+// ===========================================
+//  REF ID GENERATION
+// ===========================================
+function generateRefId() {
+    const chars = '0123456789';
+    let code = '';
+    for (let i = 0; i < 4; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return `REF-${code}`;
+}
+
+// ===========================================
+//  ORDER SUBMISSION
+// ===========================================
+async function generateOrder() {
+    // Honeypot check
+    if (document.getElementById('hp-field').value) {
+        showToast('Order submitted!', 'success'); // silent fake success
+        return;
+    }
+
+    // Rate limit check
+    if (isRateLimited()) {
+        showToast('Order limit reached. Please try again later.', 'warning');
+        return;
+    }
+
+    // Collect and validate
+    collectAllFormData();
+
+    if (!resumeData.personalInfo.fullName?.trim()) {
+        showToast('Please enter your full name.', 'error');
+        return;
+    }
+    if (!resumeData.personalInfo.email?.trim()) {
+        showToast('Please enter your email address.', 'error');
+        return;
+    }
+    if (!resumeData.personalInfo.phone?.trim()) {
+        showToast('Please enter your phone number.', 'error');
+        return;
+    }
+
+    // Disable button during submission
+    btnGenerate.disabled = true;
+    btnGenerate.innerHTML = '<div class="spinner"></div> Generating...';
+
+    try {
+        // Generate unique Ref ID
+        let refId = generateRefId();
+        let attempts = 0;
+
+        // Check uniqueness (try up to 10 times)
+        while (attempts < 10) {
+            const existing = await db.collection('orders').doc(refId).get();
+            if (!existing.exists) break;
+            refId = generateRefId();
+            attempts++;
+        }
+
+        // Prepare order data (exclude large photo from Firestore to avoid doc size limits)
+        const orderData = {
+            refId: refId,
+            status: 'pending',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            userId: currentUser.uid,
+            userEmail: currentUser.email,
+            userDisplayName: currentUser.displayName || '',
+            templateType: selectedTemplate,
+            resumeData: {
+                personalInfo: {
+                    ...resumeData.personalInfo,
+                    photoUrl: '' // Don't store base64 in Firestore (too large)
+                },
+                summary: resumeData.summary,
+                experience: resumeData.experience,
+                education: resumeData.education,
+                skills: resumeData.skills,
+                projects: resumeData.projects
+            },
+            hasPhoto: !!photoDataUrl
+        };
+
+        // Save to Firestore
+        await db.collection('orders').doc(refId).set(orderData);
+
+        // Record for rate limiting
+        recordOrder();
+
+        // Show Ref ID modal
+        refIdDisplay.textContent = `#${refId}`;
+        refModal.classList.remove('hidden');
+
+        // Start cooldown
+        startCooldown();
+
+        showToast('Order generated successfully!', 'success');
+
     } catch (error) {
-        console.error('PDF generation error:', error);
-        alert('PDF generation failed. Please try again.');
+        console.error('Order submission error:', error);
+        showToast('Failed to generate order. Please try again.', 'error');
     }
+
+    btnGenerate.disabled = false;
+    btnGenerate.innerHTML = '🎯 Generate Order';
+    checkRateLimit();
 }
 
-// PDF Generation Function
-async function generatePDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
-    const data = resumeData;
-    let y = 20;
-    
-    // Title
-    doc.setFontSize(24);
-    doc.setFont('helvetica', 'bold');
-    doc.text(data.personalInfo.fullName || 'Your Name', 20, y);
-    y += 10;
-    
-    // Contact Info
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    const contactInfo = [
-        data.personalInfo.email || '',
-        data.personalInfo.phone || '',
-        data.personalInfo.location || '',
-        data.personalInfo.linkedin || '',
-        data.personalInfo.website || ''
-    ].filter(Boolean).join(' | ');
-    
-    if (contactInfo) {
-        doc.text(contactInfo, 20, y);
-        y += 15;
-    }
-    
-    // Summary
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Professional Summary', 20, y);
-    y += 8;
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    const summaryLines = doc.splitTextToSize(data.summary || '', 170);
-    doc.text(summaryLines, 20, y);
-    y += Math.max(15, summaryLines.length * 5);
-    
-    // Experience
-    if (data.experience.length > 0) {
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Work Experience', 20, y);
-        y += 8;
-        
-        data.experience.forEach(exp => {
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            doc.text(`${exp.title} - ${exp.company}`, 20, y);
-            y += 5;
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`${exp.startDate} - ${exp.endDate}`, 20, y);
-            y += 5;
-            const descLines = doc.splitTextToSize(exp.description || '', 170);
-            doc.setFontSize(10);
-            doc.text(descLines, 20, y);
-            y += Math.max(10, descLines.length * 4);
-        });
-    }
-    
-    // Education
-    if (data.education.length > 0) {
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Education', 20, y);
-        y += 8;
-        
-        data.education.forEach(edu => {
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'bold');
-            doc.text(`${edu.degree} - ${edu.school}`, 20, y);
-            y += 5;
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`${edu.startDate} - ${edu.endDate}`, 20, y);
-            y += 8;
-        });
-    }
-    
-    // Skills
-    if (data.skills.length > 0) {
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Skills', 20, y);
-        y += 8;
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'normal');
-        const skillsText = data.skills.map(s => s.name).join(', ');
-        const skillsLines = doc.splitTextToSize(skillsText, 170);
-        doc.text(skillsLines, 20, y);
-    }
-    
-    // Save PDF
-    doc.save('resume.pdf');
+// ===========================================
+//  COOLDOWN TIMER
+// ===========================================
+function startCooldown() {
+    let remaining = COOLDOWN_SECONDS;
+    btnGenerate.disabled = true;
+
+    cooldownTimer = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+            clearInterval(cooldownTimer);
+            btnGenerate.disabled = isRateLimited();
+            btnGenerate.innerHTML = '🎯 Generate Order';
+        } else {
+            btnGenerate.innerHTML = `⏳ Wait ${remaining}s`;
+        }
+    }, 1000);
 }
 
-// Initialize
-setupAutoSave();
+// ===========================================
+//  REF MODAL
+// ===========================================
+btnCopyRef.addEventListener('click', () => {
+    const text = refIdDisplay.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        btnCopyRef.textContent = '✓ Copied!';
+        setTimeout(() => { btnCopyRef.innerHTML = '📋 Copy Code'; }, 2000);
+    }).catch(() => {
+        showToast('Failed to copy. Please copy manually.', 'warning');
+    });
+});
+
+btnCloseRef.addEventListener('click', () => {
+    refModal.classList.add('hidden');
+});
+
+refModal.addEventListener('click', (e) => {
+    if (e.target === refModal) refModal.classList.add('hidden');
+});
+
+// ===========================================
+//  TOAST NOTIFICATIONS
+// ===========================================
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        toast.style.transition = '0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// ===========================================
+//  UTILITY HELPERS
+// ===========================================
+function val(id) {
+    const el = document.getElementById(id);
+    return el ? el.value : '';
+}
+
+function setVal(id, value) {
+    const el = document.getElementById(id);
+    if (el && value) el.value = value;
+}
+
+function escHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function escAttr(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ===========================================
+//  INITIALIZATION
+// ===========================================
+// Bind auto-save to initial form fields
+bindAutoSave(document);
+
+// Initial preview update (will run after auth too)
+updatePreview();
