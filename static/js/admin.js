@@ -24,9 +24,8 @@ const db = firebase.firestore();
 // You should use Firebase Custom Claims or Security Rules.
 // For this demo/shop context, we are hardcoding an allowed email list on the client side.
 const ALLOWED_ADMIN_EMAILS = [
-    // Add your shop's admin emails here:
-    "your.admin@email.com",
-    "msi36@example.com" // Placeholder for testing
+    "alfrancispaz@gmail.com", // Your email
+    "your.admin@email.com"
 ];
 
 // --- State ---
