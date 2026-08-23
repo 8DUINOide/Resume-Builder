@@ -331,16 +331,43 @@ function handlePhotoFile(file) {
     }
     const reader = new FileReader();
     reader.onload = (e) => {
-        photoDataUrl = e.target.result;
-        photoPreviewImg.src = photoDataUrl;
-        photoPreviewImg.classList.remove('hidden');
-        photoDropArea.classList.add('has-photo');
-        btnRemovePhoto.classList.remove('hidden');
-        // Hide the upload icon & text when photo is shown
-        photoDropArea.querySelector('.photo-upload-icon').classList.add('hidden');
-        photoDropArea.querySelector('.photo-upload-text').classList.add('hidden');
-        saveDraft();
-        updatePreview();
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_SIZE = 300;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+                if (width > MAX_SIZE) {
+                    height *= MAX_SIZE / width;
+                    width = MAX_SIZE;
+                }
+            } else {
+                if (height > MAX_SIZE) {
+                    width *= MAX_SIZE / height;
+                    height = MAX_SIZE;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Compress heavily to ensure it fits in Firestore document limit (1 MiB)
+            photoDataUrl = canvas.toDataURL('image/jpeg', 0.6);
+            
+            photoPreviewImg.src = photoDataUrl;
+            photoPreviewImg.classList.remove('hidden');
+            photoDropArea.classList.add('has-photo');
+            btnRemovePhoto.classList.remove('hidden');
+            photoDropArea.querySelector('.photo-upload-icon').classList.add('hidden');
+            photoDropArea.querySelector('.photo-upload-text').classList.add('hidden');
+            saveDraft();
+            updatePreview();
+        };
+        img.src = e.target.result;
     };
     reader.readAsDataURL(file);
 }
@@ -682,7 +709,7 @@ async function generateOrder() {
             resumeData: {
                 personalInfo: {
                     ...resumeData.personalInfo,
-                    photoUrl: '' // Don't store base64 in Firestore (too large)
+                    photoUrl: photoDataUrl // Now compressed and safe to store
                 },
                 summary: resumeData.summary,
                 experience: resumeData.experience,
