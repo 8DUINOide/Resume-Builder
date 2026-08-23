@@ -20,13 +20,8 @@ if (!firebase.apps.length) {
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Note: For a real production app, checking admin emails on the client side is insecure.
-// You should use Firebase Custom Claims or Security Rules.
-// For this demo/shop context, we are hardcoding an allowed email list on the client side.
-const ALLOWED_ADMIN_EMAILS = [
-    "alfrancisbadillapaz10@gmail.com", // Your email
-    "your.admin@email.com"
-];
+// Admin access is now determined by the "role" field in the Firestore "users" collection.
+// Set a user's role to "ADMIN" in Firestore to grant admin access.
 
 // --- State ---
 let currentAdmin = null;
@@ -81,7 +76,7 @@ const statFulfilled = document.getElementById('stat-fulfilled');
 const statTotal = document.getElementById('stat-total');
 
 // ===========================================
-//  AUTH LOGIC
+//  AUTH LOGIC (Role-based from Firestore)
 // ===========================================
 btnLogin.addEventListener('click', async () => {
     try {
@@ -97,18 +92,27 @@ btnLogout.addEventListener('click', async () => {
     await auth.signOut();
 });
 
-auth.onAuthStateChanged((user) => {
+auth.onAuthStateChanged(async (user) => {
     if (user) {
-        // Quick/dirty client-side admin check
-        // WARNING: In production, use Firebase Security Rules!
-        if (ALLOWED_ADMIN_EMAILS.includes(user.email) || ALLOWED_ADMIN_EMAILS.length === 0) { // If array is empty, allow all for testing
-            currentAdmin = user;
-            loginScreen.classList.add('hidden');
-            adminShell.classList.remove('hidden');
-            adminEmailDisplay.textContent = user.email;
-            accessDenied.style.display = 'none';
-            initDashboard();
-        } else {
+        try {
+            // Check the user's role from Firestore "users" collection
+            const userDoc = await db.collection('users').doc(user.uid).get();
+            const userData = userDoc.exists ? userDoc.data() : null;
+            const role = userData?.role?.toUpperCase();
+
+            if (role === 'ADMIN') {
+                currentAdmin = user;
+                loginScreen.classList.add('hidden');
+                adminShell.classList.remove('hidden');
+                adminEmailDisplay.textContent = user.email;
+                accessDenied.style.display = 'none';
+                initDashboard();
+            } else {
+                accessDenied.style.display = 'block';
+                auth.signOut();
+            }
+        } catch (error) {
+            console.error('Error checking admin role:', error);
             accessDenied.style.display = 'block';
             auth.signOut();
         }
