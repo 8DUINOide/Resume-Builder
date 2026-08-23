@@ -64,3 +64,6 @@ resume_generator.py
 setup_firebase.py
 config.py
 requirements.txt
+
+.vercel
+.env*
