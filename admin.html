@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Artex Shop — Admin Dashboard</title>
 
-    <!-- Google Fonts -->
+    <!-- Fonts and Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Styles -->
     <link rel="stylesheet" href="./static/css/admin.css">
@@ -195,16 +196,16 @@
                     <!-- Basic Info -->
                     <h3 style="margin-top:0; border-bottom:1px solid var(--adm-border); padding-bottom:8px;">Basic Info</h3>
                     
-                    <div style="margin-bottom:16px;">
-                        <label style="display:block; font-size:12px; font-weight:600; color:var(--adm-text-muted); margin-bottom:6px;">Profile Photo</label>
+                    <div style="margin-bottom:24px; text-align:center;">
+                        <label style="display:block; font-size:12px; font-weight:600; color:var(--adm-text-muted); margin-bottom:12px;">Profile Photo</label>
                         <div class="admin-photo-upload" id="admin-photo-drop">
                             <input type="file" id="admin-photo-input" accept="image/*" style="display:none;">
                             <div class="admin-photo-text" id="admin-photo-text">
-                                <span style="font-size:20px;">📷</span><br>Click to Upload
+                                <i class="fa-solid fa-camera" style="font-size:24px; color:var(--adm-text-muted); margin-bottom:6px;"></i><br>Upload
                             </div>
                             <img id="admin-photo-preview" class="hidden" src="" alt="Preview">
                         </div>
-                        <button type="button" id="btn-admin-remove-photo" class="hidden" style="margin-top:8px; font-size:12px; color:var(--adm-danger); background:transparent; border:none; cursor:pointer;">Remove Photo</button>
+                        <button type="button" id="btn-admin-remove-photo" class="hidden" style="margin-top:12px; font-size:12px; color:var(--adm-danger); background:transparent; border:none; cursor:pointer;">Remove Photo</button>
                     </div>
 
                     <div class="form-grid cols-2">
