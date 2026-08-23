@@ -29,6 +29,7 @@ let ordersList = [];
 let currentFilter = 'all';
 let unsubscribeOrders = null;
 let selectedOrder = null;
+let isCreatingMode = false;
 
 // --- DOM Elements ---
 const loginScreen = document.getElementById('admin-login');
@@ -69,6 +70,8 @@ const btnEditResume = document.getElementById('btn-edit-resume');
 const editOverlay = document.getElementById('edit-resume-overlay');
 const btnCloseEdit = document.getElementById('btn-close-edit');
 const btnSaveEdit = document.getElementById('btn-save-edit');
+const editResumeTitle = document.getElementById('edit-resume-title');
+const btnCreateResume = document.getElementById('btn-create-resume');
 
 // Stats
 const statPending = document.getElementById('stat-pending');
@@ -398,8 +401,45 @@ function handleAdminPhotoFile(file) {
     reader.readAsDataURL(file);
 }
 
+if (btnCreateResume) {
+    btnCreateResume.addEventListener('click', () => {
+        selectedOrder = null;
+        isCreatingMode = true;
+        
+        if(editResumeTitle) editResumeTitle.textContent = "Create Resume";
+        btnSaveEdit.innerHTML = '<i class="fa-solid fa-plus"></i> Create Order';
+
+        document.getElementById('edit-fullName').value = '';
+        document.getElementById('edit-email').value = '';
+        document.getElementById('edit-phone').value = '';
+        document.getElementById('edit-location').value = '';
+        document.getElementById('edit-linkedin').value = '';
+        document.getElementById('edit-website').value = '';
+        document.getElementById('edit-summary').value = '';
+        document.getElementById('edit-template-select').value = 'ats_classic';
+
+        adminEditPhotoUrl = '';
+        adminPhotoPreview.src = '';
+        adminPhotoPreview.classList.add('hidden');
+        if (btnAdminRemovePhoto) btnAdminRemovePhoto.classList.add('hidden');
+        if (adminPhotoText) adminPhotoText.classList.remove('hidden');
+
+        document.getElementById('edit-exp-list').innerHTML = '';
+        document.getElementById('edit-edu-list').innerHTML = '';
+        document.getElementById('edit-skill-list').innerHTML = '';
+        document.getElementById('edit-proj-list').innerHTML = '';
+
+        editOverlay.classList.remove('hidden');
+    });
+}
+
 btnEditResume.addEventListener('click', () => {
     if (!selectedOrder || !selectedOrder.resumeData) return;
+    
+    isCreatingMode = false;
+    if(editResumeTitle) editResumeTitle.textContent = "Edit Resume";
+    btnSaveEdit.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Changes';
+
     const r = selectedOrder.resumeData;
     const p = r.personalInfo || {};
 
@@ -506,10 +546,10 @@ function adminAddProj(data = {}) {
 }
 
 btnSaveEdit.addEventListener('click', async () => {
-    if (!selectedOrder) return;
+    if (!isCreatingMode && !selectedOrder) return;
     
     btnSaveEdit.disabled = true;
-    btnSaveEdit.textContent = "Saving...";
+    btnSaveEdit.textContent = isCreatingMode ? "Creating..." : "Saving...";
 
     const newResumeData = {
         personalInfo: {
@@ -561,36 +601,61 @@ btnSaveEdit.addEventListener('click', async () => {
     const newTemplate = document.getElementById('edit-template-select').value;
 
     try {
-        await db.collection('orders').doc(selectedOrder.id).update({
-            resumeData: newResumeData,
-            templateType: newTemplate
-        });
-        
-        // Optimistically update the modal UI
-        selectedOrder.resumeData = newResumeData;
-        selectedOrder.templateType = newTemplate;
-        
-        // Update header texts in the modal
-        document.getElementById('detail-name').textContent = newResumeData.personalInfo.fullName;
-        document.getElementById('detail-email').textContent = newResumeData.personalInfo.email;
-        document.getElementById('detail-phone').textContent = newResumeData.personalInfo.phone;
-        document.getElementById('detail-template').textContent = newTemplate;
-        
-        // Re-render preview
-        if (typeof ResumeTemplates !== 'undefined') {
-            const html = ResumeTemplates.render(newTemplate, newResumeData);
-            adminPreviewInner.innerHTML = html;
-        }
+        if (isCreatingMode) {
+            const chars = '0123456789';
+            let code = '';
+            for (let i = 0; i < 4; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            let refId = `REF-${code}`;
+            
+            const newOrder = {
+                refId: refId,
+                status: 'pending',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                userId: currentAdmin ? currentAdmin.uid : 'admin_created',
+                userEmail: currentAdmin ? currentAdmin.email : 'admin_created',
+                userDisplayName: currentAdmin ? (currentAdmin.displayName || 'Admin') : 'Admin',
+                templateType: newTemplate,
+                resumeData: newResumeData,
+                hasPhoto: !!adminEditPhotoUrl
+            };
+            
+            await db.collection('orders').doc(refId).set(newOrder);
+            editOverlay.classList.add('hidden');
+            alert(`Order ${refId} created successfully!`);
+        } else {
+            await db.collection('orders').doc(selectedOrder.id).update({
+                resumeData: newResumeData,
+                templateType: newTemplate
+            });
+            
+            // Optimistically update the modal UI
+            selectedOrder.resumeData = newResumeData;
+            selectedOrder.templateType = newTemplate;
+            
+            // Update header texts in the modal
+            document.getElementById('detail-name').textContent = newResumeData.personalInfo.fullName;
+            document.getElementById('detail-email').textContent = newResumeData.personalInfo.email;
+            document.getElementById('detail-phone').textContent = newResumeData.personalInfo.phone;
+            document.getElementById('detail-template').textContent = newTemplate;
+            
+            // Re-render preview
+            if (typeof ResumeTemplates !== 'undefined') {
+                const html = ResumeTemplates.render(newTemplate, newResumeData);
+                adminPreviewInner.innerHTML = html;
+            }
 
-        editOverlay.classList.add('hidden');
-        alert("Changes saved successfully!");
+            editOverlay.classList.add('hidden');
+            alert("Changes saved successfully!");
+        }
     } catch (error) {
-        console.error("Error updating order:", error);
+        console.error("Error saving order:", error);
         alert("Failed to save changes. Check permissions.");
     }
     
     btnSaveEdit.disabled = false;
-    btnSaveEdit.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Changes';
+    btnSaveEdit.innerHTML = isCreatingMode ? '<i class="fa-solid fa-plus"></i> Create Order' : '<i class="fa-solid fa-floppy-disk"></i> Save Changes';
 });
 
 
