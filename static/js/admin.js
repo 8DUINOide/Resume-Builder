@@ -248,7 +248,7 @@ function openDetailModal(order) {
     detailStatus.innerHTML = `<span class="status-badge status-${order.status || 'pending'}">${statusText}</span>`;
 
     // Render Preview
-    if (window.ResumeTemplates && order.resumeData) {
+    if (typeof ResumeTemplates !== 'undefined' && order.resumeData) {
         const html = ResumeTemplates.render(order.templateType || 'ats_classic', order.resumeData);
         adminPreviewInner.innerHTML = html;
 
