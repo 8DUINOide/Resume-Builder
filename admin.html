@@ -194,6 +194,19 @@
                     
                     <!-- Basic Info -->
                     <h3 style="margin-top:0; border-bottom:1px solid var(--adm-border); padding-bottom:8px;">Basic Info</h3>
+                    
+                    <div style="margin-bottom:16px;">
+                        <label style="display:block; font-size:12px; font-weight:600; color:var(--adm-text-muted); margin-bottom:6px;">Profile Photo</label>
+                        <div class="admin-photo-upload" id="admin-photo-drop">
+                            <input type="file" id="admin-photo-input" accept="image/*" style="display:none;">
+                            <div class="admin-photo-text" id="admin-photo-text">
+                                <span style="font-size:20px;">📷</span><br>Click to Upload
+                            </div>
+                            <img id="admin-photo-preview" class="hidden" src="" alt="Preview">
+                        </div>
+                        <button type="button" id="btn-admin-remove-photo" class="hidden" style="margin-top:8px; font-size:12px; color:var(--adm-danger); background:transparent; border:none; cursor:pointer;">Remove Photo</button>
+                    </div>
+
                     <div class="form-grid cols-2">
                         <div class="form-group"><label>Full Name</label><input type="text" id="edit-fullName" class="adm-input"></div>
                         <div class="form-group"><label>Email</label><input type="text" id="edit-email" class="adm-input"></div>

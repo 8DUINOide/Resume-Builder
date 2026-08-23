@@ -331,12 +331,88 @@ function escapeHtml(str) {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+let adminEditPhotoUrl = '';
+const adminPhotoDrop = document.getElementById('admin-photo-drop');
+const adminPhotoInput = document.getElementById('admin-photo-input');
+const adminPhotoPreview = document.getElementById('admin-photo-preview');
+const adminPhotoText = document.getElementById('admin-photo-text');
+const btnAdminRemovePhoto = document.getElementById('btn-admin-remove-photo');
+
+if (adminPhotoDrop) {
+    adminPhotoDrop.addEventListener('click', () => adminPhotoInput.click());
+    adminPhotoInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) handleAdminPhotoFile(file);
+    });
+    btnAdminRemovePhoto.addEventListener('click', () => {
+        adminEditPhotoUrl = '';
+        adminPhotoPreview.src = '';
+        adminPhotoPreview.classList.add('hidden');
+        btnAdminRemovePhoto.classList.add('hidden');
+        adminPhotoText.classList.remove('hidden');
+        adminPhotoInput.value = '';
+    });
+}
+
+function handleAdminPhotoFile(file) {
+    if (file.size > 5 * 1024 * 1024) {
+        alert('Photo must be under 5 MB.');
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_SIZE = 300;
+            let width = img.width;
+            let height = img.height;
+            if (width > height) {
+                if (width > MAX_SIZE) {
+                    height *= MAX_SIZE / width;
+                    width = MAX_SIZE;
+                }
+            } else {
+                if (height > MAX_SIZE) {
+                    width *= MAX_SIZE / height;
+                    height = MAX_SIZE;
+                }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            adminEditPhotoUrl = canvas.toDataURL('image/jpeg', 0.6);
+            
+            adminPhotoPreview.src = adminEditPhotoUrl;
+            adminPhotoPreview.classList.remove('hidden');
+            btnAdminRemovePhoto.classList.remove('hidden');
+            adminPhotoText.classList.add('hidden');
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
 btnEditResume.addEventListener('click', () => {
     if (!selectedOrder || !selectedOrder.resumeData) return;
     const r = selectedOrder.resumeData;
     const p = r.personalInfo || {};
 
     // Populate basic info
+    adminEditPhotoUrl = p.photoUrl || '';
+    if (adminEditPhotoUrl) {
+        adminPhotoPreview.src = adminEditPhotoUrl;
+        adminPhotoPreview.classList.remove('hidden');
+        btnAdminRemovePhoto.classList.remove('hidden');
+        adminPhotoText.classList.add('hidden');
+    } else {
+        adminPhotoPreview.src = '';
+        adminPhotoPreview.classList.add('hidden');
+        btnAdminRemovePhoto.classList.add('hidden');
+        adminPhotoText.classList.remove('hidden');
+    }
+
     document.getElementById('edit-fullName').value = p.fullName || '';
     document.getElementById('edit-email').value = p.email || '';
     document.getElementById('edit-phone').value = p.phone || '';
@@ -431,9 +507,6 @@ btnSaveEdit.addEventListener('click', async () => {
     btnSaveEdit.disabled = true;
     btnSaveEdit.textContent = "Saving...";
 
-    // Preserve the old photoUrl if it exists
-    const oldPhotoUrl = selectedOrder.resumeData?.personalInfo?.photoUrl || '';
-
     const newResumeData = {
         personalInfo: {
             fullName: document.getElementById('edit-fullName').value,
@@ -442,7 +515,7 @@ btnSaveEdit.addEventListener('click', async () => {
             location: document.getElementById('edit-location').value,
             linkedin: document.getElementById('edit-linkedin').value,
             website: document.getElementById('edit-website').value,
-            photoUrl: oldPhotoUrl
+            photoUrl: adminEditPhotoUrl
         },
         summary: document.getElementById('edit-summary').value,
         experience: [],
