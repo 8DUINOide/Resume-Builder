@@ -3,14 +3,14 @@
    =========================================== */
 
 :root {
-  --adm-bg: #0C0C0E;
-  --adm-surface: #161618;
-  --adm-surface-2: #1E1E22;
-  --adm-border: #2A2A2E;
-  --adm-text: #F4F4F5;
-  --adm-text-muted: #71717A;
+  --adm-bg: #F8FAFC;
+  --adm-surface: #FFFFFF;
+  --adm-surface-2: #F1F5F9;
+  --adm-border: #E2E8F0;
+  --adm-text: #0F172A;
+  --adm-text-muted: #64748B;
   --adm-primary: #7C3AED;
-  --adm-primary-light: #A78BFA;
+  --adm-primary-light: #8B5CF6;
   --adm-success: #10B981;
   --adm-warning: #F59E0B;
   --adm-danger: #EF4444;
@@ -79,8 +79,8 @@ body {
 }
 
 .admin-login-card .btn-google-admin:hover {
-  background: #2A2A30;
-  border-color: #3A3A40;
+  background: var(--adm-border);
+  border-color: #CBD5E1;
 }
 
 .admin-login-card .btn-google-admin svg {
