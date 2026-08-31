@@ -1053,6 +1053,10 @@ if (btnDownloadPdfCustomer) {
             return;
         }
 
+        // Temporarily remove transform so html2canvas captures it correctly
+        const originalTransform = element.style.transform;
+        element.style.transform = 'none';
+
         const opt = {
             margin:       0,
             filename:     `${resumeData.personalInfo.fullName || 'Resume'}_Artex.pdf`,
@@ -1066,10 +1070,12 @@ if (btnDownloadPdfCustomer) {
         btnDownloadPdfCustomer.disabled = true;
 
         html2pdf().set(opt).from(element).save().then(() => {
+            element.style.transform = originalTransform;
             btnDownloadPdfCustomer.innerHTML = originalText;
             btnDownloadPdfCustomer.disabled = false;
         }).catch(err => {
             console.error('PDF generation error:', err);
+            element.style.transform = originalTransform;
             showToast('Failed to generate PDF.', 'error');
             btnDownloadPdfCustomer.innerHTML = originalText;
             btnDownloadPdfCustomer.disabled = false;

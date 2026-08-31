@@ -15,6 +15,10 @@
       "use": "@vercel/static"
     },
     {
+      "src": "success.html",
+      "use": "@vercel/static"
+    },
+    {
       "src": "artex-icon.jpg",
       "use": "@vercel/static"
     },
