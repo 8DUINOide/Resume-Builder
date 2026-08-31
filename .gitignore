@@ -56,7 +56,6 @@ firebase-service-account.json
 
 # Backend files (not needed for static site)
 app.py
-api/
 firebase_init.py
 emailer.py
 rate_limiter.py
