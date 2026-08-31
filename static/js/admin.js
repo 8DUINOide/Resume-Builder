@@ -62,7 +62,6 @@ const adminPageIndicator = document.getElementById('admin-page-indicator');
 
 // Actions
 const btnMarkPaid = document.getElementById('btn-mark-paid');
-const btnPrint = document.getElementById('btn-print-resume');
 const btnDownloadPdfAdmin = document.getElementById('btn-download-pdf-admin');
 const btnMarkFulfilled = document.getElementById('btn-mark-fulfilled');
 const btnDelete = document.getElementById('btn-delete-order');
@@ -263,6 +262,7 @@ function scaleAdminPreview() {
     const containerWidth = container.clientWidth;
     const scale = containerWidth / 794;
     adminPreviewInner.style.transform = `scale(${scale})`;
+    container.style.height = `${1123 * scale}px`;
     updateAdminPageIndicator();
 }
 
@@ -351,34 +351,6 @@ btnDelete.addEventListener('click', async () => {
             alert("Failed to delete order. Check permissions.");
         }
     }
-});
-
-btnPrint.addEventListener('click', () => {
-    if (!selectedOrder) return;
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <html>
-            <head>
-                <title>Resume - ${selectedOrder.refId}</title>
-                <link rel="stylesheet" href="${window.location.origin}/static/css/styles.css">
-                <style>
-                    body { margin: 0; padding: 0; background: white; }
-                    @media print {
-                        @page { margin: 0; }
-                        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                    }
-                </style>
-            </head>
-            <body>
-                ${adminPreviewInner.innerHTML}
-                <script>
-                    window.onload = () => { setTimeout(() => { window.print(); }, 500); };
-                </script>
-            </body>
-        </html>
-    `);
-    printWindow.document.close();
-    updateOrderStatus('printed');
 });
 
 function buildPdfExportNode(order) {
