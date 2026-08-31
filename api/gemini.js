@@ -143,7 +143,7 @@ Important rules:
             const attirePrompt = prompt || "Change the person's clothing to professional business attire: a well-fitted charcoal gray suit with a crisp white dress shirt and a subtle dark tie. Keep the person's face, expression, hair, skin tone, and background exactly the same. The result should look natural, professionally photographed, and suitable for a formal resume or LinkedIn profile photo. Do NOT change anything about the person's face or identity.";
 
             const geminiRes = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${apiKey}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-image-generation:generateContent?key=${apiKey}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
