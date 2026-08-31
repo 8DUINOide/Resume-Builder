@@ -365,6 +365,39 @@ btnPrint.addEventListener('click', () => {
     updateOrderStatus('printed');
 });
 
+function buildPdfExportNode(sourceElement) {
+    if (!sourceElement || !sourceElement.innerHTML.trim()) return null;
+
+    const exportNode = sourceElement.cloneNode(true);
+    exportNode.style.position = 'static';
+    exportNode.style.transform = 'none';
+    exportNode.style.transformOrigin = 'top left';
+    exportNode.style.zoom = '1';
+    exportNode.style.width = '794px';
+    exportNode.style.maxWidth = '794px';
+    exportNode.style.height = 'auto';
+    exportNode.style.maxHeight = 'none';
+    exportNode.style.display = 'block';
+    exportNode.style.visibility = 'visible';
+    exportNode.style.opacity = '1';
+    exportNode.style.overflow = 'visible';
+    exportNode.style.margin = '0';
+    exportNode.style.padding = '0';
+    exportNode.style.boxShadow = 'none';
+
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'fixed';
+    wrapper.style.left = '-9999px';
+    wrapper.style.top = '0';
+    wrapper.style.width = '794px';
+    wrapper.style.background = '#ffffff';
+    wrapper.style.zIndex = '2147483647';
+    wrapper.appendChild(exportNode);
+    document.body.appendChild(wrapper);
+
+    return { wrapper, exportNode };
+}
+
 if (btnDownloadPdfAdmin) {
     btnDownloadPdfAdmin.addEventListener('click', () => {
         if (!selectedOrder) return;
@@ -374,18 +407,20 @@ if (btnDownloadPdfAdmin) {
             return;
         }
 
+        const pdfExport = buildPdfExportNode(element);
+        if (!pdfExport) {
+            alert('No resume preview found.');
+            return;
+        }
+
         const p = selectedOrder.resumeData?.personalInfo || {};
         const filename = `${p.fullName || 'Resume'}_${selectedOrder.refId}.pdf`;
-
-        // Temporarily remove scale transform so pdf renders at 1:1 scale
-        const originalTransform = element.style.transform;
-        element.style.transform = 'none';
 
         const opt = {
             margin:       0,
             filename:     filename,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
+            html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
             jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
         };
         
@@ -393,18 +428,17 @@ if (btnDownloadPdfAdmin) {
         btnDownloadPdfAdmin.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
         btnDownloadPdfAdmin.disabled = true;
 
-        html2pdf().set(opt).from(element).save().then(() => {
+        html2pdf().set(opt).from(pdfExport.exportNode).save().then(() => {
             btnDownloadPdfAdmin.innerHTML = originalText;
             btnDownloadPdfAdmin.disabled = false;
-            // Restore scale
-            element.style.transform = originalTransform;
+            pdfExport.wrapper.remove();
             updateOrderStatus('printed');
         }).catch(err => {
             console.error('PDF generation error:', err);
             alert('Failed to generate PDF.');
             btnDownloadPdfAdmin.innerHTML = originalText;
             btnDownloadPdfAdmin.disabled = false;
-            element.style.transform = originalTransform;
+            pdfExport.wrapper.remove();
         });
     });
 }
