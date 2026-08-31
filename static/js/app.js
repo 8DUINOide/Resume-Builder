@@ -952,15 +952,6 @@ async function generateOrder() {
     try {
         // Generate unique Ref ID
         let refId = generateRefId();
-        let attempts = 0;
-
-        // Check uniqueness (try up to 10 times)
-        while (attempts < 10) {
-            const existing = await db.collection('orders').doc(refId).get();
-            if (!existing.exists) break;
-            refId = generateRefId();
-            attempts++;
-        }
 
         // Prepare order data
         const orderData = {
@@ -1002,7 +993,7 @@ async function generateOrder() {
 
     } catch (error) {
         console.error('Order submission error:', error);
-        showToast('Failed to generate order. Please try again.', 'error');
+        showToast(`Failed: ${error.message}`, 'error');
     }
 
     btnGenerate.disabled = false;
