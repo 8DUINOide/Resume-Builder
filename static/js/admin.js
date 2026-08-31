@@ -257,7 +257,7 @@ function updateAdminPageIndicator() {
 }
 
 function scaleAdminPreview() {
-    const container = document.querySelector('.admin-resume-preview .preview-scale-container');
+    const container = document.querySelector('.admin-full-preview-container');
     if (!container || !adminPreviewInner) return;
 
     const containerWidth = container.clientWidth;

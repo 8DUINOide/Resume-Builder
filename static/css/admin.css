@@ -459,34 +459,27 @@ body {
   overflow: hidden;
 }
 
-.admin-preview-container {
-  position: relative;
+.admin-full-preview-container {
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
   border-radius: 10px;
+  overflow: hidden;
   border: 1px solid var(--adm-border);
-  overflow: hidden;
-  background: white;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-}
-
-.admin-resume-preview .preview-scale-container {
-  width: 100%;
-  position: relative;
   aspect-ratio: 210 / 297;
-  overflow: hidden;
+  position: relative;
   background: white;
 }
 
-.admin-resume-preview .preview-scale-inner {
+#admin-preview-inner.full-preview-inner {
   position: absolute;
   top: 0;
   left: 0;
   width: 794px;
   height: 1123px;
-  transform-origin: top left;
   overflow: hidden;
+  transform-origin: top left;
 }
 
 #admin-page-indicator {
