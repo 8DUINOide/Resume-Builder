@@ -683,14 +683,20 @@ function renderFullPreview() {
     collectAllFormData();
     const html = ResumeTemplates.render(selectedTemplate, resumeData);
     const inner = document.getElementById('full-preview-inner');
+    if (!inner) return;
     inner.innerHTML = html;
 
-    // Scale to fit
+    // Scale to fit the page while preserving the full page height for the preview container.
     requestAnimationFrame(() => {
         const container = document.getElementById('full-preview');
+        if (!container) return;
+
         const containerWidth = container.clientWidth;
         const scale = containerWidth / 794;
+        const pageHeight = 1123 * scale;
+
         inner.style.transform = `scale(${scale})`;
+        container.style.height = `${pageHeight}px`;
         updatePageIndicator();
     });
 }
