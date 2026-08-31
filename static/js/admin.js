@@ -382,25 +382,30 @@ btnPrint.addEventListener('click', () => {
     updateOrderStatus('printed');
 });
 
-function buildPdfExportNode(sourceElement) {
-    if (!sourceElement || !sourceElement.innerHTML.trim()) return null;
+function buildPdfExportNode(order) {
+    if (!order || !order.resumeData) return null;
 
-    const exportNode = sourceElement.cloneNode(true);
-    exportNode.style.position = 'static';
-    exportNode.style.transform = 'none';
-    exportNode.style.transformOrigin = 'top left';
-    exportNode.style.zoom = '1';
+    const renderData = {
+        ...order.resumeData,
+        colorTheme: order.colorTheme || order.resumeData.colorTheme || 'indigo',
+        photoSize: order.photoSize || order.resumeData.photoSize || 100,
+        photoShape: order.photoShape || order.resumeData.photoShape || 'circle'
+    };
+
+    const resumeHtml = ResumeTemplates.render(order.templateType || 'ats_classic', renderData);
+    if (!resumeHtml || !resumeHtml.trim()) return null;
+
+    const exportNode = document.createElement('div');
+    exportNode.innerHTML = resumeHtml;
     exportNode.style.width = '794px';
-    exportNode.style.maxWidth = '794px';
-    exportNode.style.height = '1123px';
-    exportNode.style.maxHeight = '1123px';
-    exportNode.style.display = 'block';
-    exportNode.style.visibility = 'visible';
-    exportNode.style.opacity = '1';
-    exportNode.style.overflow = 'visible';
+    exportNode.style.minHeight = '1123px';
+    exportNode.style.background = '#ffffff';
+    exportNode.style.boxSizing = 'border-box';
     exportNode.style.margin = '0';
     exportNode.style.padding = '0';
-    exportNode.style.boxShadow = 'none';
+    exportNode.style.position = 'relative';
+    exportNode.style.overflow = 'hidden';
+    exportNode.style.fontFamily = 'Inter, Arial, sans-serif';
 
     const wrapper = document.createElement('div');
     wrapper.style.position = 'fixed';
@@ -418,13 +423,8 @@ function buildPdfExportNode(sourceElement) {
 if (btnDownloadPdfAdmin) {
     btnDownloadPdfAdmin.addEventListener('click', () => {
         if (!selectedOrder) return;
-        const element = document.getElementById('admin-preview-inner');
-        if (!element || !element.innerHTML.trim()) {
-            alert('No resume preview found.');
-            return;
-        }
 
-        const pdfExport = buildPdfExportNode(element);
+        const pdfExport = buildPdfExportNode(selectedOrder);
         if (!pdfExport) {
             alert('No resume preview found.');
             return;
@@ -434,21 +434,21 @@ if (btnDownloadPdfAdmin) {
         const filename = `${p.fullName || 'Resume'}_${selectedOrder.refId}.pdf`;
 
         const opt = {
-            margin:       0,
-            filename:     filename,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  {
+            margin: 0,
+            filename: filename,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: {
                 scale: 2,
                 useCORS: true,
                 backgroundColor: '#ffffff',
                 scrollX: 0,
                 scrollY: 0,
-                windowWidth: 794,
-                windowHeight: 1123
+                width: 794,
+                height: 1123
             },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
-        
+
         const originalText = btnDownloadPdfAdmin.innerHTML;
         btnDownloadPdfAdmin.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
         btnDownloadPdfAdmin.disabled = true;
