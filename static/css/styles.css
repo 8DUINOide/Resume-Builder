@@ -571,6 +571,11 @@ input, textarea, select { font-family: inherit; }
   object-fit: cover;
   border: 4px solid var(--bg-card);
   box-shadow: var(--shadow-md);
+  transition: border-radius 0.3s ease;
+}
+
+.photo-preview-img.square-shape {
+  border-radius: var(--radius-md);
 }
 
 .photo-upload-text h3 {

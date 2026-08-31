@@ -216,6 +216,15 @@ document.querySelectorAll('.shape-btn').forEach(btn => {
         document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         photoShape = btn.dataset.shape;
+        
+        if (photoPreviewImg) {
+            if (photoShape === 'square') {
+                photoPreviewImg.classList.add('square-shape');
+            } else {
+                photoPreviewImg.classList.remove('square-shape');
+            }
+        }
+
         debounceSave();
         updatePreview();
     });
@@ -609,6 +618,14 @@ function populateForm() {
         document.querySelectorAll('.shape-btn').forEach(b => {
             b.classList.toggle('active', b.dataset.shape === photoShape);
         });
+        
+        if (photoPreviewImg) {
+            if (photoShape === 'square') {
+                photoPreviewImg.classList.add('square-shape');
+            } else {
+                photoPreviewImg.classList.remove('square-shape');
+            }
+        }
     }
 }
 
