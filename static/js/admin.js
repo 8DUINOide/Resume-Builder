@@ -367,7 +367,16 @@ function buildPdfExportNode(order) {
     if (!resumeHtml || !resumeHtml.trim()) return null;
 
     const exportNode = document.createElement('div');
-    exportNode.innerHTML = resumeHtml;
+    exportNode.innerHTML = `
+        <style>
+            * { box-sizing: border-box; }
+            div, h1, h2, h3, p, ul, li, section, article {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+        </style>
+        ${resumeHtml}
+    `;
     exportNode.style.width = '794px';
     exportNode.style.minHeight = '1123px';
     exportNode.style.background = '#ffffff';
@@ -935,7 +944,17 @@ btnPrint.addEventListener('click', () => {
             <style>
                 @page { margin: 25.4mm 0; size: A4; }
                 body { margin: 0; padding: 0; background: #fff; display: flex; justify-content: center; }
-                .resume-container { width: 794px; min-height: 1123px; box-sizing: border-box; }
+                .resume-container {
+                    width: 794px;
+                    min-height: 1123px;
+                    box-sizing: border-box;
+                    page-break-inside: avoid;
+                    break-inside: avoid;
+                }
+                .resume-container * {
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
+                }
                 /* Hide everything except the resume container when printing */
                 @media print {
                     body { display: block; margin: 0; }
