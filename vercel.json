@@ -1,18 +1,31 @@
 {
+  "version": 2,
+  "framework": null,
   "builds": [
     {
       "src": "api/gemini.js",
       "use": "@vercel/node"
     },
     {
-      "src": "**",
+      "src": "index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "admin.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "artex-icon.jpg",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "static/**",
       "use": "@vercel/static"
     }
   ],
   "routes": [
-    {
-      "src": "/admin",
-      "dest": "/admin.html"
-    }
+    { "src": "/api/gemini", "dest": "/api/gemini.js" },
+    { "src": "/admin", "dest": "/admin.html" },
+    { "handle": "filesystem" }
   ]
 }
