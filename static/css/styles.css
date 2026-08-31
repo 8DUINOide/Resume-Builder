@@ -802,6 +802,8 @@ input, textarea, select { font-family: inherit; }
   top: 0;
   left: 0;
   width: 794px;
+  height: 1123px;
+  overflow: hidden;
   transform-origin: top left;
 }
 

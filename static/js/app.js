@@ -1042,48 +1042,6 @@ refModal.addEventListener('click', (e) => {
 });
 
 // ===========================================
-//  PDF DOWNLOAD (Customer)
-// ===========================================
-const btnDownloadPdfCustomer = document.getElementById('btn-download-pdf-customer');
-if (btnDownloadPdfCustomer) {
-    btnDownloadPdfCustomer.addEventListener('click', () => {
-        const element = document.getElementById('full-preview-inner');
-        if (!element || !element.innerHTML.trim()) {
-            showToast('No resume to download.', 'warning');
-            return;
-        }
-
-        // Temporarily remove transform so html2canvas captures it correctly
-        const originalTransform = element.style.transform;
-        element.style.transform = 'none';
-
-        const opt = {
-            margin:       0,
-            filename:     `${resumeData.personalInfo.fullName || 'Resume'}_Artex.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
-            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-        };
-        
-        const originalText = btnDownloadPdfCustomer.innerHTML;
-        btnDownloadPdfCustomer.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
-        btnDownloadPdfCustomer.disabled = true;
-
-        html2pdf().set(opt).from(element).save().then(() => {
-            element.style.transform = originalTransform;
-            btnDownloadPdfCustomer.innerHTML = originalText;
-            btnDownloadPdfCustomer.disabled = false;
-        }).catch(err => {
-            console.error('PDF generation error:', err);
-            element.style.transform = originalTransform;
-            showToast('Failed to generate PDF.', 'error');
-            btnDownloadPdfCustomer.innerHTML = originalText;
-            btnDownloadPdfCustomer.disabled = false;
-        });
-    });
-}
-
-// ===========================================
 //  TOAST NOTIFICATIONS
 // ===========================================
 function showToast(message, type = 'info') {
