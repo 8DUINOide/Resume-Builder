@@ -472,7 +472,8 @@ body {
   background: white;
 }
 
-#admin-preview-inner.full-preview-inner {
+#admin-preview-inner.full-preview-inner,
+#admin-preview-inner {
   position: absolute;
   top: 0;
   left: 0;
@@ -482,6 +483,7 @@ body {
   transform-origin: top left;
 }
 
+#admin-page-indicator.page-indicator,
 #admin-page-indicator {
   position: absolute;
   top: 12px;
