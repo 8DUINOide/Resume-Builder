@@ -1,27 +1,8 @@
 {
-  "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "index.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "admin.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "api/gemini.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/gemini",
-      "dest": "/api/gemini.js"
-    },
-    {
-      "src": "/admin",
-      "dest": "/admin.html"
+      "source": "/admin",
+      "destination": "/admin.html"
     }
   ]
 }
