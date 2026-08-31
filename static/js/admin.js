@@ -392,8 +392,8 @@ function buildPdfExportNode(sourceElement) {
     exportNode.style.zoom = '1';
     exportNode.style.width = '794px';
     exportNode.style.maxWidth = '794px';
-    exportNode.style.height = 'auto';
-    exportNode.style.maxHeight = 'none';
+    exportNode.style.height = '1123px';
+    exportNode.style.maxHeight = '1123px';
     exportNode.style.display = 'block';
     exportNode.style.visibility = 'visible';
     exportNode.style.opacity = '1';
@@ -437,8 +437,16 @@ if (btnDownloadPdfAdmin) {
             margin:       0,
             filename:     filename,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            html2canvas:  {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: 794,
+                windowHeight: 1123
+            },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
         
         const originalText = btnDownloadPdfAdmin.innerHTML;
