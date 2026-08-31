@@ -210,3 +210,7 @@ Important rules:
         return res.status(500).json({ error: 'Internal server error', message: error.message });
     }
 }
+
+module.exports.config = {
+    maxDuration: 60
+};
