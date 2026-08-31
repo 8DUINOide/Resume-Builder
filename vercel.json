@@ -23,6 +23,11 @@
       "use": "@vercel/static"
     }
   ],
+  "functions": {
+    "api/gemini.js": {
+      "maxDuration": 60
+    }
+  },
   "routes": [
     { "src": "/api/gemini", "dest": "/api/gemini.js" },
     { "src": "/admin", "dest": "/admin.html" },
