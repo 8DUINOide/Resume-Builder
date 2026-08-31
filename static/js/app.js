@@ -205,7 +205,15 @@ const photoControlsPanel = document.getElementById('photo-controls');
 if (photoSizeSlider) {
     photoSizeSlider.addEventListener('input', (e) => {
         photoSize = parseInt(e.target.value);
-        photoSizeValue.textContent = `${photoSize}px`;
+        
+        const inches = (photoSize / 96).toFixed(1);
+        photoSizeValue.textContent = `${inches} in`;
+        
+        if (photoPreviewImg) {
+            photoPreviewImg.style.width = `${photoSize}px`;
+            photoPreviewImg.style.height = `${photoSize}px`;
+        }
+
         debounceSave();
         updatePreview();
     });
@@ -611,7 +619,14 @@ function populateForm() {
     if (resumeData.photoSize) {
         photoSize = resumeData.photoSize;
         if (photoSizeSlider) photoSizeSlider.value = photoSize;
-        if (photoSizeValue) photoSizeValue.textContent = `${photoSize}px`;
+        if (photoSizeValue) {
+            const inches = (photoSize / 96).toFixed(1);
+            photoSizeValue.textContent = `${inches} in`;
+        }
+        if (photoPreviewImg) {
+            photoPreviewImg.style.width = `${photoSize}px`;
+            photoPreviewImg.style.height = `${photoSize}px`;
+        }
     }
     if (resumeData.photoShape) {
         photoShape = resumeData.photoShape;
