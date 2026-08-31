@@ -965,14 +965,8 @@ async function generateOrder() {
         // Record for rate limiting
         recordOrder();
 
-        // Show Ref ID modal
-        refIdDisplay.textContent = `#${refId}`;
-        refModal.classList.remove('hidden');
-
-        // Start cooldown
-        startCooldown();
-
-        showToast('Order generated successfully!', 'success');
+        // Redirect to success page
+        window.location.href = `success.html?ref=${refId}`;
 
     } catch (error) {
         console.error('Order submission error:', error);
@@ -1023,6 +1017,42 @@ btnCloseRef.addEventListener('click', () => {
 refModal.addEventListener('click', (e) => {
     if (e.target === refModal) refModal.classList.add('hidden');
 });
+
+// ===========================================
+//  PDF DOWNLOAD (Customer)
+// ===========================================
+const btnDownloadPdfCustomer = document.getElementById('btn-download-pdf-customer');
+if (btnDownloadPdfCustomer) {
+    btnDownloadPdfCustomer.addEventListener('click', () => {
+        const element = document.getElementById('full-preview-inner');
+        if (!element || !element.innerHTML.trim()) {
+            showToast('No resume to download.', 'warning');
+            return;
+        }
+
+        const opt = {
+            margin:       0,
+            filename:     `${resumeData.personalInfo.fullName || 'Resume'}_Artex.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+        
+        const originalText = btnDownloadPdfCustomer.innerHTML;
+        btnDownloadPdfCustomer.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
+        btnDownloadPdfCustomer.disabled = true;
+
+        html2pdf().set(opt).from(element).save().then(() => {
+            btnDownloadPdfCustomer.innerHTML = originalText;
+            btnDownloadPdfCustomer.disabled = false;
+        }).catch(err => {
+            console.error('PDF generation error:', err);
+            showToast('Failed to generate PDF.', 'error');
+            btnDownloadPdfCustomer.innerHTML = originalText;
+            btnDownloadPdfCustomer.disabled = false;
+        });
+    });
+}
 
 // ===========================================
 //  TOAST NOTIFICATIONS

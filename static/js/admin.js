@@ -62,6 +62,7 @@ const adminPreviewInner = document.getElementById('admin-preview-inner');
 // Actions
 const btnMarkPaid = document.getElementById('btn-mark-paid');
 const btnPrint = document.getElementById('btn-print-resume');
+const btnDownloadPdfAdmin = document.getElementById('btn-download-pdf-admin');
 const btnMarkFulfilled = document.getElementById('btn-mark-fulfilled');
 const btnDelete = document.getElementById('btn-delete-order');
 const btnEditResume = document.getElementById('btn-edit-resume');
@@ -77,6 +78,7 @@ const btnCreateResume = document.getElementById('btn-create-resume');
 const statPending = document.getElementById('stat-pending');
 const statFulfilled = document.getElementById('stat-fulfilled');
 const statTotal = document.getElementById('stat-total');
+const statCustomers = document.getElementById('stat-customers');
 
 // ===========================================
 //  AUTH LOGIC (Role-based from Firestore)
@@ -98,54 +100,40 @@ btnLogout.addEventListener('click', async () => {
 auth.onAuthStateChanged(async (user) => {
     if (user) {
         try {
-            // Check the user's role from Firestore "users" collection
             const userDoc = await db.collection('users').doc(user.uid).get();
-            const userData = userDoc.exists ? userDoc.data() : null;
-            const role = userData?.role?.toUpperCase();
-
-            if (role === 'ADMIN') {
+            if (userDoc.exists && userDoc.data().role === 'ADMIN') {
                 currentAdmin = user;
                 loginScreen.classList.add('hidden');
                 adminShell.classList.remove('hidden');
+                accessDenied.classList.add('hidden');
                 adminEmailDisplay.textContent = user.email;
-                accessDenied.style.display = 'none';
-                initDashboard();
+                fetchOrders();
             } else {
-                accessDenied.style.display = 'block';
-                auth.signOut();
+                accessDenied.classList.remove('hidden');
+                await auth.signOut();
             }
         } catch (error) {
-            console.error('Error checking admin role:', error);
-            accessDenied.style.display = 'block';
-            auth.signOut();
+            console.error("Auth check error:", error);
+            accessDenied.classList.remove('hidden');
+            await auth.signOut();
         }
     } else {
         currentAdmin = null;
         loginScreen.classList.remove('hidden');
         adminShell.classList.add('hidden');
-        if (unsubscribeOrders) {
-            unsubscribeOrders();
-            unsubscribeOrders = null;
-        }
+        accessDenied.classList.add('hidden');
     }
 });
 
 // ===========================================
-//  DASHBOARD LOGIC
+//  FETCH & RENDER ORDERS
 // ===========================================
-function initDashboard() {
+function fetchOrders() {
     spinner.classList.remove('hidden');
-    emptyState.classList.add('hidden');
-    tbody.innerHTML = '';
-
-    // Listen to all orders ordered by creation date
     unsubscribeOrders = db.collection('orders')
         .orderBy('createdAt', 'desc')
         .onSnapshot(snapshot => {
-            ordersList = [];
-            snapshot.forEach(doc => {
-                ordersList.push({ id: doc.id, ...doc.data() });
-            });
+            ordersList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             renderOrders();
             updateStats();
             spinner.classList.add('hidden');
@@ -164,7 +152,7 @@ function renderOrders() {
         const matchFilter = currentFilter === 'all' || order.status === currentFilter;
         let matchSearch = true;
         if (searchTerm) {
-            matchSearch = order.refId.toUpperCase().includes(searchTerm) ||
+            matchSearch = (order.refId || '').toUpperCase().includes(searchTerm) ||
                 (order.resumeData?.personalInfo?.fullName || '').toUpperCase().includes(searchTerm);
         }
         return matchFilter && matchSearch;
@@ -190,7 +178,7 @@ function renderOrders() {
             const statusText = (order.status || 'pending').toUpperCase();
 
             tr.innerHTML = `
-                <td class="ref-id">#${order.refId}</td>
+                <td class="ref-id">#${order.refId || '???'}</td>
                 <td>${dateStr}</td>
                 <td>${escapeHtml(name)}</td>
                 <td>${escapeHtml(email)}</td>
@@ -219,9 +207,22 @@ function updateStats() {
         return d.toDateString() === today;
     }).length;
 
+    // Calculate unique customers based on email
+    const uniqueEmails = new Set();
+    ordersList.forEach(o => {
+        const email = o.resumeData?.personalInfo?.email || o.userEmail;
+        if (email && email !== 'N/A' && email !== 'admin_created') {
+            uniqueEmails.add(email.toLowerCase().trim());
+        }
+    });
+    const totalCustomers = uniqueEmails.size;
+
     statTotal.textContent = total;
     statPending.textContent = pending;
     statFulfilled.textContent = fulfilledToday;
+    if (statCustomers) {
+        statCustomers.textContent = totalCustomers;
+    }
 }
 
 // Filters & Search
@@ -335,6 +336,78 @@ btnDelete.addEventListener('click', async () => {
         }
     }
 });
+
+btnPrint.addEventListener('click', () => {
+    if (!selectedOrder) return;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Resume - ${selectedOrder.refId}</title>
+                <link rel="stylesheet" href="${window.location.origin}/static/css/styles.css">
+                <style>
+                    body { margin: 0; padding: 0; background: white; }
+                    @media print {
+                        @page { margin: 0; }
+                        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    }
+                </style>
+            </head>
+            <body>
+                ${adminPreviewInner.innerHTML}
+                <script>
+                    window.onload = () => { setTimeout(() => { window.print(); }, 500); };
+                </script>
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+    updateOrderStatus('printed');
+});
+
+if (btnDownloadPdfAdmin) {
+    btnDownloadPdfAdmin.addEventListener('click', () => {
+        if (!selectedOrder) return;
+        const element = document.getElementById('admin-preview-inner');
+        if (!element || !element.innerHTML.trim()) {
+            alert('No resume preview found.');
+            return;
+        }
+
+        const p = selectedOrder.resumeData?.personalInfo || {};
+        const filename = `${p.fullName || 'Resume'}_${selectedOrder.refId}.pdf`;
+
+        // Temporarily remove scale transform so pdf renders at 1:1 scale
+        const originalTransform = element.style.transform;
+        element.style.transform = 'none';
+
+        const opt = {
+            margin:       0,
+            filename:     filename,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+        
+        const originalText = btnDownloadPdfAdmin.innerHTML;
+        btnDownloadPdfAdmin.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
+        btnDownloadPdfAdmin.disabled = true;
+
+        html2pdf().set(opt).from(element).save().then(() => {
+            btnDownloadPdfAdmin.innerHTML = originalText;
+            btnDownloadPdfAdmin.disabled = false;
+            // Restore scale
+            element.style.transform = originalTransform;
+            updateOrderStatus('printed');
+        }).catch(err => {
+            console.error('PDF generation error:', err);
+            alert('Failed to generate PDF.');
+            btnDownloadPdfAdmin.innerHTML = originalText;
+            btnDownloadPdfAdmin.disabled = false;
+            element.style.transform = originalTransform;
+        });
+    });
+}
 
 // ===========================================
 //  EDIT RESUME FUNCTIONALITY
@@ -856,3 +929,189 @@ btnPrint.addEventListener('click', () => {
 
     printWindow.document.close();
 });
+// ===========================================
+//  AI SCAN FUNCTIONALITY (ADMIN)
+// ===========================================
+const btnAdminAiScanOpen = document.getElementById('btn-admin-ai-scan-open');
+const adminAiScanModal = document.getElementById('admin-ai-scan-modal');
+const btnCloseAdminAiScan = document.getElementById('btn-close-admin-ai-scan');
+const adminAiScanDrop = document.getElementById('admin-ai-scan-drop');
+const adminAiScanInput = document.getElementById('admin-ai-scan-input');
+const adminAiScanPreview = document.getElementById('admin-ai-scan-preview');
+const adminAiScanUploadInner = document.getElementById('admin-ai-scan-upload-inner');
+const adminAiScanStatus = document.getElementById('admin-ai-scan-status');
+const adminAiScanError = document.getElementById('admin-ai-scan-error');
+const btnAdminStartScan = document.getElementById('btn-admin-start-scan');
+
+let adminAiScanImageBase64 = '';
+let adminAiScanMimeType = 'image/jpeg';
+
+if (btnAdminAiScanOpen) {
+    btnAdminAiScanOpen.addEventListener('click', () => {
+        resetAdminAiScanState();
+        adminAiScanModal.classList.remove('hidden');
+    });
+}
+
+if (btnCloseAdminAiScan) {
+    btnCloseAdminAiScan.addEventListener('click', () => {
+        adminAiScanModal.classList.add('hidden');
+    });
+}
+
+function resetAdminAiScanState() {
+    adminAiScanImageBase64 = '';
+    adminAiScanPreview.src = '';
+    adminAiScanPreview.classList.add('hidden');
+    adminAiScanUploadInner.classList.remove('hidden');
+    adminAiScanStatus.classList.add('hidden');
+    adminAiScanError.classList.add('hidden');
+    btnAdminStartScan.disabled = true;
+    btnAdminStartScan.style.opacity = '0.5';
+    btnAdminStartScan.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Extract Data';
+    adminAiScanInput.value = '';
+}
+
+function handleAdminAiScanFile(file) {
+    if (file.size > 10 * 1024 * 1024) {
+        alert('File must be under 10 MB.');
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const dataUrl = e.target.result;
+        adminAiScanMimeType = file.type || 'image/jpeg';
+        adminAiScanImageBase64 = dataUrl.split(',')[1];
+
+        adminAiScanPreview.src = dataUrl;
+        adminAiScanPreview.classList.remove('hidden');
+        adminAiScanUploadInner.classList.add('hidden');
+        btnAdminStartScan.disabled = false;
+        btnAdminStartScan.style.opacity = '1';
+    };
+    reader.readAsDataURL(file);
+}
+
+if (adminAiScanDrop) {
+    adminAiScanDrop.addEventListener('click', () => adminAiScanInput.click());
+    adminAiScanDrop.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        adminAiScanDrop.style.borderColor = 'var(--adm-primary)';
+    });
+    adminAiScanDrop.addEventListener('dragleave', () => {
+        adminAiScanDrop.style.borderColor = 'var(--adm-border)';
+    });
+    adminAiScanDrop.addEventListener('drop', (e) => {
+        e.preventDefault();
+        adminAiScanDrop.style.borderColor = 'var(--adm-border)';
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleAdminAiScanFile(e.dataTransfer.files[0]);
+        }
+    });
+}
+
+if (adminAiScanInput) {
+    adminAiScanInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+            handleAdminAiScanFile(e.target.files[0]);
+        }
+    });
+}
+
+if (btnAdminStartScan) {
+    btnAdminStartScan.addEventListener('click', async () => {
+        if (!adminAiScanImageBase64) return;
+
+        btnAdminStartScan.disabled = true;
+        btnAdminStartScan.innerHTML = 'Processing...';
+        adminAiScanStatus.classList.remove('hidden');
+        adminAiScanError.classList.add('hidden');
+
+        try {
+            const response = await fetch('/api/gemini', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'extractResume',
+                    imageBase64: adminAiScanImageBase64,
+                    mimeType: adminAiScanMimeType
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || result.message || 'Failed to extract data');
+            }
+
+            const extracted = result.data;
+            
+            // Populate admin edit form
+            if (extracted.personalInfo) {
+                if (extracted.personalInfo.fullName) document.getElementById('edit-fullName').value = extracted.personalInfo.fullName;
+                if (extracted.personalInfo.email) document.getElementById('edit-email').value = extracted.personalInfo.email;
+                if (extracted.personalInfo.phone) document.getElementById('edit-phone').value = extracted.personalInfo.phone;
+                if (extracted.personalInfo.location) document.getElementById('edit-location').value = extracted.personalInfo.location;
+                if (extracted.personalInfo.linkedin) document.getElementById('edit-linkedin').value = extracted.personalInfo.linkedin;
+                if (extracted.personalInfo.website) document.getElementById('edit-website').value = extracted.personalInfo.website;
+            }
+            if (extracted.summary) document.getElementById('edit-summary').value = extracted.summary;
+
+            // Clear and replace experience
+            if (extracted.experience && extracted.experience.length > 0) {
+                document.getElementById('edit-exp-list').innerHTML = '';
+                extracted.experience.forEach(exp => {
+                    const card = createExpCard();
+                    card.querySelector('.exp-company').value = exp.company || '';
+                    card.querySelector('.exp-role').value = exp.role || '';
+                    card.querySelector('.exp-date').value = exp.date || '';
+                    card.querySelector('.exp-desc').value = exp.description || '';
+                    document.getElementById('edit-exp-list').appendChild(card);
+                });
+            }
+
+            // Clear and replace education
+            if (extracted.education && extracted.education.length > 0) {
+                document.getElementById('edit-edu-list').innerHTML = '';
+                extracted.education.forEach(edu => {
+                    const card = createEduCard();
+                    card.querySelector('.edu-school').value = edu.school || '';
+                    card.querySelector('.edu-degree').value = edu.degree || '';
+                    card.querySelector('.edu-date').value = edu.date || '';
+                    document.getElementById('edit-edu-list').appendChild(card);
+                });
+            }
+
+            // Clear and replace skills
+            if (extracted.skills && extracted.skills.length > 0) {
+                document.getElementById('edit-skill-list').innerHTML = '';
+                extracted.skills.forEach(sk => {
+                    const card = createSkillCard();
+                    card.querySelector('.skill-name').value = sk.name || '';
+                    document.getElementById('edit-skill-list').appendChild(card);
+                });
+            }
+
+            // Clear and replace projects
+            if (extracted.projects && extracted.projects.length > 0) {
+                document.getElementById('edit-proj-list').innerHTML = '';
+                extracted.projects.forEach(proj => {
+                    const card = createProjCard();
+                    card.querySelector('.proj-name').value = proj.name || '';
+                    card.querySelector('.proj-desc').value = proj.description || '';
+                    document.getElementById('edit-proj-list').appendChild(card);
+                });
+            }
+
+            adminAiScanModal.classList.add('hidden');
+            alert('Resume data extracted and form populated!');
+
+        } catch (error) {
+            console.error('AI scan error:', error);
+            adminAiScanError.textContent = error.message || 'Failed to extract data.';
+            adminAiScanError.classList.remove('hidden');
+            btnAdminStartScan.disabled = false;
+            btnAdminStartScan.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Extract Data';
+        }
+    });
+}

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Successful — Artex Resume Builder</title>
+    <meta name="description" content="Your order was generated successfully.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="./static/css/styles.css">
+    
+    <style>
+        body {
+            background-color: #F8FAFC;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+        }
+        .success-card {
+            background: white;
+            padding: 48px 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background-color: #D1FAE5;
+            color: #10B981;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            margin: 0 auto 24px;
+        }
+        .success-card h1 {
+            color: #0F172A;
+            font-size: 28px;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+        .success-card p {
+            color: #64748B;
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 32px;
+        }
+        .ref-box {
+            background-color: #F1F5F9;
+            border: 1px dashed #CBD5E1;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 32px;
+        }
+        .ref-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748B;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .ref-id {
+            font-size: 32px;
+            font-weight: 800;
+            color: #0F172A;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
+        }
+        .btn-copy-ref {
+            background-color: transparent;
+            color: #4F46E5;
+            border: 1px solid #4F46E5;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-copy-ref:hover {
+            background-color: #EEF2FF;
+        }
+        .next-steps {
+            text-align: left;
+            margin-bottom: 32px;
+        }
+        .next-steps h3 {
+            font-size: 14px;
+            color: #0F172A;
+            margin-bottom: 12px;
+        }
+        .next-steps ul {
+            padding-left: 20px;
+            color: #475569;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .btn-home {
+            display: inline-block;
+            background-color: #4F46E5;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            width: 100%;
+            transition: background-color 0.2s;
+            box-sizing: border-box;
+        }
+        .btn-home:hover {
+            background-color: #4338CA;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="success-card">
+        <div class="success-icon"><i class="fa-solid fa-check"></i></div>
+        <h1>Order Generated!</h1>
+        <p>Your resume has been successfully generated and saved to our system. Here is your unique Reference ID.</p>
+        
+        <div class="ref-box">
+            <div class="ref-label">Reference ID</div>
+            <div class="ref-id" id="ref-id-display">Loading...</div>
+            <button class="btn-copy-ref" id="btn-copy-ref"><i class="fa-regular fa-clipboard"></i> Copy Code</button>
+        </div>
+
+        <div class="next-steps">
+            <h3>Next Steps</h3>
+            <ul>
+                <li>Please proceed to the Artex cashier.</li>
+                <li>Present your Reference ID to process the payment.</li>
+                <li>Wait for your resume to be printed and handed to you!</li>
+            </ul>
+        </div>
+
+        <a href="index.html" class="btn-home">Back to Home</a>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script>
+        // Get ref from URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const refId = urlParams.get('ref');
+        
+        const refIdDisplay = document.getElementById('ref-id-display');
+        const btnCopyRef = document.getElementById('btn-copy-ref');
+
+        if (refId) {
+            refIdDisplay.textContent = `#${refId}`;
+        } else {
+            refIdDisplay.textContent = "Not Found";
+        }
+
+        btnCopyRef.addEventListener('click', () => {
+            if (refId) {
+                navigator.clipboard.writeText(`#${refId}`).then(() => {
+                    btnCopyRef.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                    setTimeout(() => { btnCopyRef.innerHTML = '<i class="fa-regular fa-clipboard"></i> Copy Code'; }, 2000);
+                }).catch(() => {
+                    showToast('Failed to copy. Please copy manually.', 'warning');
+                });
+            }
+        });
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                toast.style.transition = '0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
