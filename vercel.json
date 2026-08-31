@@ -1,22 +1,8 @@
 {
-  "builds": [
+  "rewrites": [
     {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "**",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/gemini",
-      "dest": "/api/gemini.js"
-    },
-    {
-      "src": "/admin",
-      "dest": "/admin.html"
+      "source": "/admin",
+      "destination": "/admin.html"
     }
   ]
 }
