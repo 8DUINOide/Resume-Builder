@@ -58,6 +58,7 @@ const detailTemplate = document.getElementById('detail-template');
 const detailDate = document.getElementById('detail-date');
 const detailStatus = document.getElementById('detail-status');
 const adminPreviewInner = document.getElementById('admin-preview-inner');
+const adminPageIndicator = document.getElementById('admin-page-indicator');
 
 // Actions
 const btnMarkPaid = document.getElementById('btn-mark-paid');
@@ -246,6 +247,26 @@ btnSearch.addEventListener('click', () => {
 // ===========================================
 //  ORDER DETAILS MODAL
 // ===========================================
+function updateAdminPageIndicator() {
+    if (!adminPageIndicator || !adminPreviewInner) return;
+
+    const pageHeight = 1123;
+    const estimatedHeight = adminPreviewInner.scrollHeight || adminPreviewInner.offsetHeight || pageHeight;
+    const pageCount = Math.max(1, Math.ceil(estimatedHeight / pageHeight));
+    adminPageIndicator.textContent = `Page 1 of ${pageCount}`;
+}
+
+function scaleAdminPreview() {
+    const container = document.querySelector('.admin-resume-preview .preview-scale-container');
+    if (!container || !adminPreviewInner) return;
+
+    const containerWidth = container.clientWidth;
+    const scale = containerWidth / 794;
+    adminPreviewInner.style.transform = `scale(${scale})`;
+    container.style.height = `${1123 * scale}px`;
+    updateAdminPageIndicator();
+}
+
 function openDetailModal(order) {
     selectedOrder = order;
     const p = order.resumeData?.personalInfo || {};
@@ -272,16 +293,12 @@ function openDetailModal(order) {
         const html = ResumeTemplates.render(order.templateType || 'ats_classic', renderData);
         adminPreviewInner.innerHTML = html;
 
-        // Scale to fit Container
-        setTimeout(() => {
-            const container = document.querySelector('.admin-resume-preview .preview-scale-container');
-            const containerWidth = container.clientWidth;
-            const scale = containerWidth / 794;
-            adminPreviewInner.style.transform = `scale(${scale})`;
-            container.style.height = `${1123 * scale}px`;
-        }, 50);
+        requestAnimationFrame(() => {
+            scaleAdminPreview();
+        });
     } else {
         adminPreviewInner.innerHTML = '<p style="padding:20px;">Cannot render preview (missing template system or data).</p>';
+        updateAdminPageIndicator();
     }
 
     detailOverlay.classList.remove('hidden');
