@@ -1,12 +1,11 @@
-# Exclude Python backend files from Vercel deployment
-api/
+# Exclude old Python backend files from Vercel deployment
 *.py
-app.py
-config.py
-emailer.py
-firebase_init.py
-rate_limiter.py
-resume_generator.py
-setup_firebase.py
-requirements.txt
 __pycache__/
+.env
+.env.local
+.env.example
+generated_pdfs/
+uploads/
+resume-builder-57506.json
+artex-base64.txt
+artex-icon.txt
