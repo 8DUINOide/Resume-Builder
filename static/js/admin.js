@@ -257,13 +257,12 @@ function updateAdminPageIndicator() {
 }
 
 function scaleAdminPreview() {
-    const container = document.querySelector('.admin-full-preview-container');
+    const container = document.querySelector('.full-preview-container, .admin-full-preview-container');
     if (!container || !adminPreviewInner) return;
 
     const containerWidth = container.clientWidth;
     const scale = containerWidth / 794;
     adminPreviewInner.style.transform = `scale(${scale})`;
-    container.style.height = `${1123 * scale}px`;
     updateAdminPageIndicator();
 }
 
