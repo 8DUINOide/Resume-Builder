@@ -405,7 +405,7 @@ if (btnDownloadPdfAdmin) {
         const filename = `${p.fullName || 'Resume'}_${selectedOrder.refId}.pdf`;
 
         const opt = {
-            margin: 0,
+            margin: [25.4, 10, 25.4, 10],
             filename: filename,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: {
@@ -933,13 +933,13 @@ btnPrint.addEventListener('click', () => {
             <title>Print Order #${selectedOrder.refId}</title>
             <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
             <style>
-                @page { margin: 0; size: A4; }
+                @page { margin: 25.4mm 0; size: A4; }
                 body { margin: 0; padding: 0; background: #fff; display: flex; justify-content: center; }
-                .resume-container { width: 794px; min-height: 1123px; }
+                .resume-container { width: 794px; min-height: 1123px; box-sizing: border-box; }
                 /* Hide everything except the resume container when printing */
                 @media print {
-                    body { display: block; }
-                    .resume-container { position: absolute; top: 0; left: 0; }
+                    body { display: block; margin: 0; }
+                    .resume-container { position: absolute; top: 25.4mm; left: 0; }
                 }
             </style>
         </head>
