@@ -26,6 +26,9 @@ let currentUser = null;
 let currentStep = 1;
 const TOTAL_STEPS = 4;
 let selectedTemplate = 'ats_classic';
+let selectedColorTheme = 'indigo';
+let photoSize = 100;
+let photoShape = 'circle';
 let resumeData = {
     personalInfo: {},
     summary: '',
@@ -42,6 +45,10 @@ const RATE_LIMIT_MAX = 3;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const COOLDOWN_SECONDS = 60;
 let cooldownTimer = null;
+
+// AI scan state
+let aiScanImageBase64 = '';
+let aiScanMimeType = 'image/jpeg';
 
 // --- DOM Elements ---
 const loginScreen = document.getElementById('login-screen');
@@ -174,6 +181,57 @@ document.querySelectorAll('.tpl-card').forEach(card => {
         updatePreview();
     });
 });
+
+// ===========================================
+//  COLOR THEME SELECTION
+// ===========================================
+document.querySelectorAll('.color-swatch').forEach(swatch => {
+    swatch.addEventListener('click', () => {
+        document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+        swatch.classList.add('selected');
+        selectedColorTheme = swatch.dataset.theme;
+        debounceSave();
+        updatePreview();
+    });
+});
+
+// ===========================================
+//  PHOTO SIZE & SHAPE CONTROLS
+// ===========================================
+const photoSizeSlider = document.getElementById('photo-size-slider');
+const photoSizeValue = document.getElementById('photo-size-value');
+const photoControlsPanel = document.getElementById('photo-controls');
+
+if (photoSizeSlider) {
+    photoSizeSlider.addEventListener('input', (e) => {
+        photoSize = parseInt(e.target.value);
+        photoSizeValue.textContent = `${photoSize}px`;
+        debounceSave();
+        updatePreview();
+    });
+}
+
+document.querySelectorAll('.shape-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        photoShape = btn.dataset.shape;
+        debounceSave();
+        updatePreview();
+    });
+});
+
+function showPhotoControls() {
+    if (photoControlsPanel && photoDataUrl) {
+        photoControlsPanel.classList.remove('hidden');
+    }
+}
+
+function hidePhotoControls() {
+    if (photoControlsPanel) {
+        photoControlsPanel.classList.add('hidden');
+    }
+}
 
 // ===========================================
 //  DYNAMIC FORM ENTRIES
@@ -364,6 +422,7 @@ function handlePhotoFile(file) {
             btnRemovePhoto.classList.remove('hidden');
             photoDropArea.querySelector('.photo-upload-icon').classList.add('hidden');
             photoDropArea.querySelector('.photo-upload-text').classList.add('hidden');
+            showPhotoControls();
             saveDraft();
             updatePreview();
         };
@@ -381,6 +440,7 @@ btnRemovePhoto.addEventListener('click', () => {
     photoDropArea.querySelector('.photo-upload-icon').classList.remove('hidden');
     photoDropArea.querySelector('.photo-upload-text').classList.remove('hidden');
     photoInput.value = '';
+    hidePhotoControls();
     saveDraft();
     updatePreview();
 });
@@ -485,6 +545,9 @@ function collectAllFormData() {
     });
 
     resumeData.templateType = selectedTemplate;
+    resumeData.colorTheme = selectedColorTheme;
+    resumeData.photoSize = photoSize;
+    resumeData.photoShape = photoShape;
 }
 
 function populateForm() {
@@ -505,6 +568,7 @@ function populateForm() {
         btnRemovePhoto.classList.remove('hidden');
         photoDropArea.querySelector('.photo-upload-icon').classList.add('hidden');
         photoDropArea.querySelector('.photo-upload-text').classList.add('hidden');
+        showPhotoControls();
     }
 
     // Clear and re-populate dynamic entries
@@ -523,6 +587,27 @@ function populateForm() {
         selectedTemplate = resumeData.templateType;
         document.querySelectorAll('.tpl-card').forEach(c => {
             c.classList.toggle('selected', c.dataset.template === selectedTemplate);
+        });
+    }
+
+    // Restore color theme
+    if (resumeData.colorTheme) {
+        selectedColorTheme = resumeData.colorTheme;
+        document.querySelectorAll('.color-swatch').forEach(s => {
+            s.classList.toggle('selected', s.dataset.theme === selectedColorTheme);
+        });
+    }
+
+    // Restore photo size/shape
+    if (resumeData.photoSize) {
+        photoSize = resumeData.photoSize;
+        if (photoSizeSlider) photoSizeSlider.value = photoSize;
+        if (photoSizeValue) photoSizeValue.textContent = `${photoSize}px`;
+    }
+    if (resumeData.photoShape) {
+        photoShape = resumeData.photoShape;
+        document.querySelectorAll('.shape-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.shape === photoShape);
         });
     }
 }
@@ -603,6 +688,154 @@ btnCloseMobile.addEventListener('click', () => {
 mobileOverlay.addEventListener('click', (e) => {
     if (e.target === mobileOverlay) mobileOverlay.classList.add('hidden');
 });
+
+// ===========================================
+//  AI RESUME SCAN
+// ===========================================
+const aiScanModal = document.getElementById('ai-scan-modal');
+const btnAiScan = document.getElementById('btn-ai-scan');
+const btnCloseAiScan = document.getElementById('btn-close-ai-scan');
+const aiScanDrop = document.getElementById('ai-scan-drop');
+const aiScanInput = document.getElementById('ai-scan-input');
+const aiScanPreview = document.getElementById('ai-scan-preview');
+const aiScanUploadInner = document.getElementById('ai-scan-upload-inner');
+const aiScanStatus = document.getElementById('ai-scan-status');
+const aiScanError = document.getElementById('ai-scan-error');
+const btnStartScan = document.getElementById('btn-start-scan');
+
+if (btnAiScan) {
+    btnAiScan.addEventListener('click', () => {
+        aiScanModal.classList.remove('hidden');
+        resetAiScanModal();
+    });
+}
+
+if (btnCloseAiScan) {
+    btnCloseAiScan.addEventListener('click', () => {
+        aiScanModal.classList.add('hidden');
+    });
+}
+
+if (aiScanModal) {
+    aiScanModal.addEventListener('click', (e) => {
+        if (e.target === aiScanModal) aiScanModal.classList.add('hidden');
+    });
+}
+
+if (aiScanDrop) {
+    aiScanDrop.addEventListener('click', () => aiScanInput.click());
+
+    aiScanDrop.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        aiScanDrop.style.borderColor = 'var(--primary)';
+    });
+
+    aiScanDrop.addEventListener('dragleave', () => {
+        aiScanDrop.style.borderColor = '';
+    });
+
+    aiScanDrop.addEventListener('drop', (e) => {
+        e.preventDefault();
+        aiScanDrop.style.borderColor = '';
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) handleAiScanFile(file);
+    });
+}
+
+if (aiScanInput) {
+    aiScanInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) handleAiScanFile(file);
+    });
+}
+
+function resetAiScanModal() {
+    aiScanImageBase64 = '';
+    aiScanPreview.classList.add('hidden');
+    aiScanPreview.src = '';
+    aiScanUploadInner.classList.remove('hidden');
+    aiScanStatus.classList.add('hidden');
+    aiScanError.classList.add('hidden');
+    btnStartScan.disabled = true;
+    btnStartScan.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Extract Data';
+    aiScanInput.value = '';
+}
+
+function handleAiScanFile(file) {
+    if (file.size > 10 * 1024 * 1024) {
+        showToast('File must be under 10 MB.', 'error');
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const dataUrl = e.target.result;
+        aiScanMimeType = file.type || 'image/jpeg';
+        // Extract base64 portion
+        aiScanImageBase64 = dataUrl.split(',')[1];
+
+        aiScanPreview.src = dataUrl;
+        aiScanPreview.classList.remove('hidden');
+        aiScanUploadInner.classList.add('hidden');
+        btnStartScan.disabled = false;
+    };
+    reader.readAsDataURL(file);
+}
+
+if (btnStartScan) {
+    btnStartScan.addEventListener('click', async () => {
+        if (!aiScanImageBase64) return;
+
+        btnStartScan.disabled = true;
+        btnStartScan.innerHTML = '<div class="ai-scan-spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;"></div> Processing...';
+        aiScanStatus.classList.remove('hidden');
+        aiScanError.classList.add('hidden');
+
+        try {
+            const response = await fetch('/api/gemini', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'extractResume',
+                    imageBase64: aiScanImageBase64,
+                    mimeType: aiScanMimeType
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || result.message || 'Failed to extract resume data');
+            }
+
+            // Populate the form with extracted data
+            const extracted = result.data;
+            if (extracted.personalInfo) {
+                resumeData.personalInfo = { ...resumeData.personalInfo, ...extracted.personalInfo };
+            }
+            if (extracted.summary) resumeData.summary = extracted.summary;
+            if (extracted.experience) resumeData.experience = extracted.experience;
+            if (extracted.education) resumeData.education = extracted.education;
+            if (extracted.skills) resumeData.skills = extracted.skills;
+            if (extracted.projects) resumeData.projects = extracted.projects;
+
+            populateForm();
+            saveDraft();
+            updatePreview();
+
+            aiScanModal.classList.add('hidden');
+            showToast('Resume data extracted successfully! Review and edit the fields.', 'success');
+
+        } catch (error) {
+            console.error('AI scan error:', error);
+            aiScanError.textContent = error.message || 'Failed to extract data. Please try again.';
+            aiScanError.classList.remove('hidden');
+        }
+
+        aiScanStatus.classList.add('hidden');
+        btnStartScan.disabled = false;
+        btnStartScan.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Extract Data';
+    });
+}
 
 // ===========================================
 //  RATE LIMITING
@@ -697,7 +930,7 @@ async function generateOrder() {
             attempts++;
         }
 
-        // Prepare order data (exclude large photo from Firestore to avoid doc size limits)
+        // Prepare order data
         const orderData = {
             refId: refId,
             status: 'pending',
@@ -706,6 +939,9 @@ async function generateOrder() {
             userEmail: currentUser.email,
             userDisplayName: currentUser.displayName || '',
             templateType: selectedTemplate,
+            colorTheme: selectedColorTheme,
+            photoSize: photoSize,
+            photoShape: photoShape,
             resumeData: {
                 personalInfo: {
                     ...resumeData.personalInfo,
@@ -715,7 +951,10 @@ async function generateOrder() {
                 experience: resumeData.experience,
                 education: resumeData.education,
                 skills: resumeData.skills,
-                projects: resumeData.projects
+                projects: resumeData.projects,
+                colorTheme: selectedColorTheme,
+                photoSize: photoSize,
+                photoShape: photoShape
             },
             hasPhoto: !!photoDataUrl
         };

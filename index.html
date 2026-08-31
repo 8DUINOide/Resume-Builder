@@ -109,6 +109,15 @@
                         <h2 class="step-title">Your Details</h2>
                         <p class="step-subtitle">Fill in your resume information below.</p>
 
+                        <!-- AI Scan Button -->
+                        <div class="ai-scan-section">
+                            <button type="button" id="btn-ai-scan" class="btn-ai-scan">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                Scan Resume with AI
+                            </button>
+                            <span class="ai-scan-hint">Upload a photo of your existing resume and let AI fill in the fields</span>
+                        </div>
+
                         <!-- Contact Info -->
                         <div class="form-section">
                             <div class="form-section-header">
@@ -207,6 +216,30 @@
                         <div style="text-align:center;margin-top:16px;">
                             <button type="button" id="btn-remove-photo" class="btn-skip-photo hidden">Remove Photo</button>
                         </div>
+
+                        <!-- Photo Controls -->
+                        <div id="photo-controls" class="photo-controls hidden">
+                            <div class="photo-control-group">
+                                <label class="photo-control-label">Photo Size</label>
+                                <div class="photo-slider-row">
+                                    <span class="slider-label-sm">Small</span>
+                                    <input type="range" id="photo-size-slider" class="photo-size-slider" min="50" max="200" value="100" step="5">
+                                    <span class="slider-label-sm">Large</span>
+                                    <span id="photo-size-value" class="photo-size-value">100px</span>
+                                </div>
+                            </div>
+                            <div class="photo-control-group">
+                                <label class="photo-control-label">Photo Shape</label>
+                                <div class="photo-shape-toggle">
+                                    <button type="button" class="shape-btn active" data-shape="circle">
+                                        <span class="shape-icon circle-icon"></span> Circle
+                                    </button>
+                                    <button type="button" class="shape-btn" data-shape="square">
+                                        <span class="shape-icon square-icon"></span> Square
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- ========== STEP 3: TEMPLATE ========== -->
@@ -263,6 +296,21 @@
                                     <h4>Executive Dark</h4>
                                     <p>Formal dark header with gold accent</p>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Color Theme Picker -->
+                        <div class="color-theme-section">
+                            <h3 class="color-theme-title"><i class="fa-solid fa-palette"></i> Color Theme</h3>
+                            <div class="color-swatch-grid" id="color-swatch-grid">
+                                <button type="button" class="color-swatch selected" data-theme="indigo" style="background:#312E81;" title="Indigo"></button>
+                                <button type="button" class="color-swatch" data-theme="blue" style="background:#1E40AF;" title="Blue"></button>
+                                <button type="button" class="color-swatch" data-theme="emerald" style="background:#065F46;" title="Emerald"></button>
+                                <button type="button" class="color-swatch" data-theme="rose" style="background:#9F1239;" title="Rose"></button>
+                                <button type="button" class="color-swatch" data-theme="amber" style="background:#92400E;" title="Amber"></button>
+                                <button type="button" class="color-swatch" data-theme="teal" style="background:#115E59;" title="Teal"></button>
+                                <button type="button" class="color-swatch" data-theme="slate" style="background:#1E293B;" title="Slate"></button>
+                                <button type="button" class="color-swatch" data-theme="purple" style="background:#7C3AED;" title="Purple"></button>
                             </div>
                         </div>
                     </div>
@@ -338,6 +386,37 @@
         <div class="mobile-preview-content">
             <button type="button" class="mobile-preview-close" id="btn-close-mobile-preview"><i class="fa-solid fa-xmark"></i></button>
             <div id="mobile-preview-inner" style="overflow:auto;"></div>
+        </div>
+    </div>
+
+    <!-- AI Scan Modal -->
+    <div id="ai-scan-modal" class="modal-overlay hidden">
+        <div class="ai-scan-modal-card">
+            <button type="button" id="btn-close-ai-scan" class="ai-scan-close"><i class="fa-solid fa-xmark"></i></button>
+            <div class="ai-scan-modal-header">
+                <div class="ai-scan-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                <h2>Scan Resume with AI</h2>
+                <p>Upload or take a photo of your existing resume. Our AI will extract the data and fill in the form for you.</p>
+            </div>
+            <div class="ai-scan-upload-area" id="ai-scan-drop">
+                <div class="ai-scan-upload-inner" id="ai-scan-upload-inner">
+                    <i class="fa-solid fa-cloud-arrow-up" style="font-size:36px;color:var(--primary-muted);margin-bottom:12px;"></i>
+                    <h3>Drop resume image here</h3>
+                    <p>or click to browse • JPG, PNG, PDF screenshot</p>
+                    <input type="file" id="ai-scan-input" accept="image/*" capture="environment" style="display:none;">
+                </div>
+                <img id="ai-scan-preview" class="ai-scan-preview hidden" src="" alt="Preview">
+            </div>
+            <div id="ai-scan-status" class="ai-scan-status hidden">
+                <div class="ai-scan-spinner"></div>
+                <span>Analyzing resume... this may take a few seconds</span>
+            </div>
+            <div id="ai-scan-error" class="ai-scan-error hidden"></div>
+            <div class="ai-scan-actions">
+                <button type="button" id="btn-start-scan" class="btn-start-scan" disabled>
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Extract Data
+                </button>
+            </div>
         </div>
     </div>
 

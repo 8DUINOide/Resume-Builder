@@ -260,9 +260,15 @@ function openDetailModal(order) {
     const statusText = (order.status || 'pending').toUpperCase();
     detailStatus.innerHTML = `<span class="status-badge status-${order.status || 'pending'}">${statusText}</span>`;
 
-    // Render Preview
+    // Render Preview — include colorTheme/photoSize/photoShape from order
     if (typeof ResumeTemplates !== 'undefined' && order.resumeData) {
-        const html = ResumeTemplates.render(order.templateType || 'ats_classic', order.resumeData);
+        const renderData = {
+            ...order.resumeData,
+            colorTheme: order.colorTheme || order.resumeData.colorTheme || 'indigo',
+            photoSize: order.photoSize || order.resumeData.photoSize || 100,
+            photoShape: order.photoShape || order.resumeData.photoShape || 'circle'
+        };
+        const html = ResumeTemplates.render(order.templateType || 'ats_classic', renderData);
         adminPreviewInner.innerHTML = html;
 
         // Scale to fit Container
@@ -335,15 +341,17 @@ btnDelete.addEventListener('click', async () => {
 // ===========================================
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return str.toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 let adminEditPhotoUrl = '';
+let adminOriginalPhotoUrl = ''; // Store original photo before attire change
 const adminPhotoDrop = document.getElementById('admin-photo-drop');
 const adminPhotoInput = document.getElementById('admin-photo-input');
 const adminPhotoPreview = document.getElementById('admin-photo-preview');
 const adminPhotoText = document.getElementById('admin-photo-text');
 const btnAdminRemovePhoto = document.getElementById('btn-admin-remove-photo');
+const btnBusinessAttire = document.getElementById('btn-business-attire');
 
 if (adminPhotoDrop) {
     adminPhotoDrop.addEventListener('click', () => adminPhotoInput.click());
@@ -353,12 +361,24 @@ if (adminPhotoDrop) {
     });
     btnAdminRemovePhoto.addEventListener('click', () => {
         adminEditPhotoUrl = '';
+        adminOriginalPhotoUrl = '';
         adminPhotoPreview.src = '';
         adminPhotoPreview.classList.add('hidden');
         btnAdminRemovePhoto.classList.add('hidden');
+        if (btnBusinessAttire) btnBusinessAttire.classList.add('hidden');
         adminPhotoText.classList.remove('hidden');
         adminPhotoInput.value = '';
     });
+}
+
+function showAdminPhotoButtons() {
+    btnAdminRemovePhoto.classList.remove('hidden');
+    if (btnBusinessAttire) btnBusinessAttire.classList.remove('hidden');
+}
+
+function hideAdminPhotoButtons() {
+    btnAdminRemovePhoto.classList.add('hidden');
+    if (btnBusinessAttire) btnBusinessAttire.classList.add('hidden');
 }
 
 function handleAdminPhotoFile(file) {
@@ -390,10 +410,11 @@ function handleAdminPhotoFile(file) {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
             adminEditPhotoUrl = canvas.toDataURL('image/jpeg', 0.6);
+            adminOriginalPhotoUrl = adminEditPhotoUrl; // Save as original
             
             adminPhotoPreview.src = adminEditPhotoUrl;
             adminPhotoPreview.classList.remove('hidden');
-            btnAdminRemovePhoto.classList.remove('hidden');
+            showAdminPhotoButtons();
             adminPhotoText.classList.add('hidden');
         };
         img.src = e.target.result;
@@ -401,6 +422,114 @@ function handleAdminPhotoFile(file) {
     reader.readAsDataURL(file);
 }
 
+// ===========================================
+//  BUSINESS ATTIRE AI FEATURE
+// ===========================================
+const attireModal = document.getElementById('attire-modal');
+const attireLoading = document.getElementById('attire-loading');
+const attireResult = document.getElementById('attire-result');
+const attireActions = document.getElementById('attire-actions');
+const attireOriginal = document.getElementById('attire-original');
+const attireGenerated = document.getElementById('attire-generated');
+const attireErrorMsg = document.getElementById('attire-error-msg');
+const btnCloseAttire = document.getElementById('btn-close-attire');
+const btnAttireAccept = document.getElementById('btn-attire-accept');
+const btnAttireReject = document.getElementById('btn-attire-reject');
+
+let generatedAttireDataUrl = '';
+
+if (btnBusinessAttire) {
+    btnBusinessAttire.addEventListener('click', async () => {
+        if (!adminEditPhotoUrl) {
+            alert('Please upload a photo first.');
+            return;
+        }
+
+        // Show modal in loading state
+        attireModal.classList.remove('hidden');
+        attireLoading.classList.remove('hidden');
+        attireResult.classList.add('hidden');
+        attireActions.classList.add('hidden');
+        attireErrorMsg.classList.add('hidden');
+        generatedAttireDataUrl = '';
+
+        // Show original
+        attireOriginal.src = adminOriginalPhotoUrl || adminEditPhotoUrl;
+
+        try {
+            // Extract base64 from data URL
+            const base64 = adminEditPhotoUrl.split(',')[1];
+            const mimeMatch = adminEditPhotoUrl.match(/data:([^;]+);/);
+            const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+
+            const response = await fetch('/api/gemini', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'businessAttire',
+                    imageBase64: base64,
+                    mimeType: mimeType
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || result.message || 'Failed to generate business attire');
+            }
+
+            generatedAttireDataUrl = `data:${result.mimeType};base64,${result.imageBase64}`;
+            attireGenerated.src = generatedAttireDataUrl;
+
+            attireLoading.classList.add('hidden');
+            attireResult.classList.remove('hidden');
+            attireActions.classList.remove('hidden');
+
+        } catch (error) {
+            console.error('Business attire error:', error);
+            attireLoading.classList.add('hidden');
+            attireResult.classList.remove('hidden');
+            attireErrorMsg.textContent = error.message || 'Failed to generate. Try a different photo.';
+            attireErrorMsg.classList.remove('hidden');
+            attireActions.classList.remove('hidden');
+            // Hide accept button on error
+            if (btnAttireAccept) btnAttireAccept.style.display = 'none';
+        }
+    });
+}
+
+if (btnCloseAttire) {
+    btnCloseAttire.addEventListener('click', () => {
+        attireModal.classList.add('hidden');
+        if (btnAttireAccept) btnAttireAccept.style.display = '';
+    });
+}
+
+if (btnAttireReject) {
+    btnAttireReject.addEventListener('click', () => {
+        attireModal.classList.add('hidden');
+        if (btnAttireAccept) btnAttireAccept.style.display = '';
+    });
+}
+
+if (btnAttireAccept) {
+    btnAttireAccept.addEventListener('click', () => {
+        if (generatedAttireDataUrl) {
+            // Save original if not already saved
+            if (!adminOriginalPhotoUrl) {
+                adminOriginalPhotoUrl = adminEditPhotoUrl;
+            }
+            // Set the new attire photo as active
+            adminEditPhotoUrl = generatedAttireDataUrl;
+            adminPhotoPreview.src = generatedAttireDataUrl;
+        }
+        attireModal.classList.add('hidden');
+    });
+}
+
+// ===========================================
+//  CREATE / EDIT RESUME
+// ===========================================
 if (btnCreateResume) {
     btnCreateResume.addEventListener('click', () => {
         selectedOrder = null;
@@ -417,11 +546,13 @@ if (btnCreateResume) {
         document.getElementById('edit-website').value = '';
         document.getElementById('edit-summary').value = '';
         document.getElementById('edit-template-select').value = 'ats_classic';
+        document.getElementById('edit-color-theme').value = 'indigo';
 
         adminEditPhotoUrl = '';
+        adminOriginalPhotoUrl = '';
         adminPhotoPreview.src = '';
         adminPhotoPreview.classList.add('hidden');
-        if (btnAdminRemovePhoto) btnAdminRemovePhoto.classList.add('hidden');
+        hideAdminPhotoButtons();
         if (adminPhotoText) adminPhotoText.classList.remove('hidden');
 
         document.getElementById('edit-exp-list').innerHTML = '';
@@ -445,15 +576,16 @@ btnEditResume.addEventListener('click', () => {
 
     // Populate basic info
     adminEditPhotoUrl = p.photoUrl || '';
+    adminOriginalPhotoUrl = p.originalPhotoUrl || p.photoUrl || '';
     if (adminEditPhotoUrl) {
         adminPhotoPreview.src = adminEditPhotoUrl;
         adminPhotoPreview.classList.remove('hidden');
-        btnAdminRemovePhoto.classList.remove('hidden');
+        showAdminPhotoButtons();
         adminPhotoText.classList.add('hidden');
     } else {
         adminPhotoPreview.src = '';
         adminPhotoPreview.classList.add('hidden');
-        btnAdminRemovePhoto.classList.add('hidden');
+        hideAdminPhotoButtons();
         adminPhotoText.classList.remove('hidden');
     }
 
@@ -465,6 +597,7 @@ btnEditResume.addEventListener('click', () => {
     document.getElementById('edit-website').value = p.website || '';
     document.getElementById('edit-summary').value = r.summary || '';
     document.getElementById('edit-template-select').value = selectedOrder.templateType || 'ats_classic';
+    document.getElementById('edit-color-theme').value = selectedOrder.colorTheme || r.colorTheme || 'indigo';
 
     // Clear dynamic lists
     document.getElementById('edit-exp-list').innerHTML = '';
@@ -559,7 +692,8 @@ btnSaveEdit.addEventListener('click', async () => {
             location: document.getElementById('edit-location').value,
             linkedin: document.getElementById('edit-linkedin').value,
             website: document.getElementById('edit-website').value,
-            photoUrl: adminEditPhotoUrl
+            photoUrl: adminEditPhotoUrl,
+            originalPhotoUrl: adminOriginalPhotoUrl || adminEditPhotoUrl // Save original photo
         },
         summary: document.getElementById('edit-summary').value,
         experience: [],
@@ -567,6 +701,9 @@ btnSaveEdit.addEventListener('click', async () => {
         skills: [],
         projects: []
     };
+
+    const newColorTheme = document.getElementById('edit-color-theme').value;
+    newResumeData.colorTheme = newColorTheme;
 
     // Collect Dynamic Lists
     document.querySelectorAll('#edit-exp-list > .admin-entry-card').forEach(card => {
@@ -617,6 +754,7 @@ btnSaveEdit.addEventListener('click', async () => {
                 userEmail: currentAdmin ? currentAdmin.email : 'admin_created',
                 userDisplayName: currentAdmin ? (currentAdmin.displayName || 'Admin') : 'Admin',
                 templateType: newTemplate,
+                colorTheme: newColorTheme,
                 resumeData: newResumeData,
                 hasPhoto: !!adminEditPhotoUrl
             };
@@ -627,12 +765,14 @@ btnSaveEdit.addEventListener('click', async () => {
         } else {
             await db.collection('orders').doc(selectedOrder.id).update({
                 resumeData: newResumeData,
-                templateType: newTemplate
+                templateType: newTemplate,
+                colorTheme: newColorTheme
             });
             
             // Optimistically update the modal UI
             selectedOrder.resumeData = newResumeData;
             selectedOrder.templateType = newTemplate;
+            selectedOrder.colorTheme = newColorTheme;
             
             // Update header texts in the modal
             document.getElementById('detail-name').textContent = newResumeData.personalInfo.fullName;
@@ -642,7 +782,8 @@ btnSaveEdit.addEventListener('click', async () => {
             
             // Re-render preview
             if (typeof ResumeTemplates !== 'undefined') {
-                const html = ResumeTemplates.render(newTemplate, newResumeData);
+                const renderData = { ...newResumeData, colorTheme: newColorTheme };
+                const html = ResumeTemplates.render(newTemplate, renderData);
                 adminPreviewInner.innerHTML = html;
             }
 
@@ -665,8 +806,6 @@ btnSaveEdit.addEventListener('click', async () => {
 btnPrint.addEventListener('click', () => {
     if (!selectedOrder || !selectedOrder.resumeData) return;
 
-    // The trick for clean printing without blowing up the admin UI:
-    // We open a new window, write the resume HTML to it, and call print()
     const printWindow = window.open('', '_blank');
 
     if (!printWindow) {
@@ -674,8 +813,13 @@ btnPrint.addEventListener('click', () => {
         return;
     }
 
-    // We need the template HTML
-    const resumeHtml = ResumeTemplates.render(selectedOrder.templateType || 'ats_classic', selectedOrder.resumeData);
+    const renderData = {
+        ...selectedOrder.resumeData,
+        colorTheme: selectedOrder.colorTheme || selectedOrder.resumeData.colorTheme || 'indigo',
+        photoSize: selectedOrder.photoSize || selectedOrder.resumeData.photoSize || 100,
+        photoShape: selectedOrder.photoShape || selectedOrder.resumeData.photoShape || 'circle'
+    };
+    const resumeHtml = ResumeTemplates.render(selectedOrder.templateType || 'ats_classic', renderData);
 
     updateOrderStatus('printed');
 
@@ -704,7 +848,6 @@ btnPrint.addEventListener('click', () => {
                 // Wait a moment for fonts/images to load, then print
                 setTimeout(() => {
                     window.print();
-                    // window.close(); // Optional: close after print dialog
                 }, 1000);
             </script>
         </body>
@@ -713,9 +856,3 @@ btnPrint.addEventListener('click', () => {
 
     printWindow.document.close();
 });
-
-// Helper
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}

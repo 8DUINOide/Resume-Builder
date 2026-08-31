@@ -30,6 +30,7 @@
          =========================== -->
     <div id="admin-login" class="admin-login">
         <div class="admin-login-card">
+            <img src="./artex-icon.jpg" alt="Artex" class="admin-logo-icon">
             <h1>Admin Access</h1>
             <p>Sign in with an authorized admin account to view orders.</p>
             <button id="btn-admin-login" class="btn-google-admin">
@@ -206,7 +207,12 @@
                             </div>
                             <img id="admin-photo-preview" class="hidden" src="" alt="Preview">
                         </div>
-                        <button type="button" id="btn-admin-remove-photo" class="hidden" style="margin-top:12px; font-size:12px; color:var(--adm-danger); background:transparent; border:none; cursor:pointer;">Remove Photo</button>
+                        <div style="margin-top:12px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+                            <button type="button" id="btn-admin-remove-photo" class="hidden" style="font-size:12px; color:var(--adm-danger); background:transparent; border:1px solid var(--adm-danger); border-radius:6px; padding:4px 12px; cursor:pointer;">Remove Photo</button>
+                            <button type="button" id="btn-business-attire" class="btn-business-attire hidden">
+                                <i class="fa-solid fa-user-tie"></i> Change to Business Attire
+                            </button>
+                        </div>
                     </div>
 
                     <div class="form-grid cols-2">
@@ -257,15 +263,31 @@
                     </div>
 
                     <!-- Template Selection -->
-                    <h3 style="margin-top:24px; border-bottom:1px solid var(--adm-border); padding-bottom:8px;">Template</h3>
-                    <div class="form-group">
-                        <select id="edit-template-select" class="adm-input">
-                            <option value="ats_classic">ATS Classic</option>
-                            <option value="canva_modern_1">Modern Two-Column</option>
-                            <option value="canva_creative_2">Creative Banner</option>
-                            <option value="canva_minimal_3">Minimal Elegant</option>
-                            <option value="canva_executive_4">Executive Dark</option>
-                        </select>
+                    <h3 style="margin-top:24px; border-bottom:1px solid var(--adm-border); padding-bottom:8px;">Template & Color</h3>
+                    <div class="form-grid cols-2">
+                        <div class="form-group">
+                            <label>Template</label>
+                            <select id="edit-template-select" class="adm-input">
+                                <option value="ats_classic">ATS Classic</option>
+                                <option value="canva_modern_1">Modern Two-Column</option>
+                                <option value="canva_creative_2">Creative Banner</option>
+                                <option value="canva_minimal_3">Minimal Elegant</option>
+                                <option value="canva_executive_4">Executive Dark</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Color Theme</label>
+                            <select id="edit-color-theme" class="adm-input">
+                                <option value="indigo">Indigo</option>
+                                <option value="blue">Blue</option>
+                                <option value="emerald">Emerald</option>
+                                <option value="rose">Rose</option>
+                                <option value="amber">Amber</option>
+                                <option value="teal">Teal</option>
+                                <option value="slate">Slate</option>
+                                <option value="purple">Purple</option>
+                            </select>
+                        </div>
                     </div>
 
                 </div>
@@ -273,6 +295,42 @@
 
             <div class="order-actions" style="justify-content: flex-end;">
                 <button id="btn-save-edit" class="btn-action fulfill"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===========================
+         BUSINESS ATTIRE PREVIEW MODAL
+         =========================== -->
+    <div id="attire-modal" class="attire-modal-overlay hidden">
+        <div class="attire-modal-card">
+            <div class="attire-modal-header">
+                <h3><i class="fa-solid fa-user-tie"></i> Business Attire Preview</h3>
+                <button id="btn-close-attire" class="btn-close-detail"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="attire-modal-body">
+                <div id="attire-loading" class="attire-loading">
+                    <div class="attire-spinner"></div>
+                    <p>Transforming photo to business attire...</p>
+                    <p style="font-size:12px;color:#94A3B8;margin-top:4px;">This may take 10-20 seconds</p>
+                </div>
+                <div id="attire-result" class="hidden">
+                    <div class="attire-compare">
+                        <div class="attire-compare-item">
+                            <label>Original</label>
+                            <img id="attire-original" src="" alt="Original">
+                        </div>
+                        <div class="attire-compare-item">
+                            <label>Business Attire</label>
+                            <img id="attire-generated" src="" alt="Generated">
+                        </div>
+                    </div>
+                    <div id="attire-error-msg" class="attire-error hidden"></div>
+                </div>
+            </div>
+            <div id="attire-actions" class="attire-modal-actions hidden">
+                <button type="button" id="btn-attire-reject" class="btn-action delete">Reject</button>
+                <button type="button" id="btn-attire-accept" class="btn-action fulfill"><i class="fa-solid fa-check"></i> Accept & Use</button>
             </div>
         </div>
     </div>
