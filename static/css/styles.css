@@ -807,6 +807,22 @@ input, textarea, select { font-family: inherit; }
   transform-origin: top left;
 }
 
+.page-indicator {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 12;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+}
+
 /* --- Navigation Buttons --- */
 .step-nav {
   display: flex;

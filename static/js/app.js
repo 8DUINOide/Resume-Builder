@@ -668,6 +668,17 @@ function scaleSidePreview() {
     inner.style.transform = `scale(${scale})`;
 }
 
+function updatePageIndicator() {
+    const indicator = document.getElementById('page-indicator');
+    const inner = document.getElementById('full-preview-inner');
+    if (!indicator || !inner) return;
+
+    const pageHeight = 1123;
+    const estimatedHeight = inner.scrollHeight || inner.offsetHeight || pageHeight;
+    const pageCount = Math.max(1, Math.ceil(estimatedHeight / pageHeight));
+    indicator.textContent = `Page 1 of ${pageCount}`;
+}
+
 function renderFullPreview() {
     collectAllFormData();
     const html = ResumeTemplates.render(selectedTemplate, resumeData);
@@ -680,6 +691,7 @@ function renderFullPreview() {
         const containerWidth = container.clientWidth;
         const scale = containerWidth / 794;
         inner.style.transform = `scale(${scale})`;
+        updatePageIndicator();
     });
 }
 
