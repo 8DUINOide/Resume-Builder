@@ -1138,9 +1138,7 @@ if (btnAdminStartScan) {
             if (extracted.skills && extracted.skills.length > 0) {
                 document.getElementById('edit-skill-list').innerHTML = '';
                 extracted.skills.forEach(sk => {
-                    const card = createSkillCard();
-                    card.querySelector('.skill-name').value = sk.name || '';
-                    document.getElementById('edit-skill-list').appendChild(card);
+                    adminAddSkill({ name: sk.name || '' });
                 });
             }
 
@@ -1148,10 +1146,10 @@ if (btnAdminStartScan) {
             if (extracted.projects && extracted.projects.length > 0) {
                 document.getElementById('edit-proj-list').innerHTML = '';
                 extracted.projects.forEach(proj => {
-                    const card = createProjCard();
-                    card.querySelector('.proj-name').value = proj.name || '';
-                    card.querySelector('.proj-desc').value = proj.description || '';
-                    document.getElementById('edit-proj-list').appendChild(card);
+                    adminAddProj({
+                        name: proj.name || '',
+                        description: proj.description || ''
+                    });
                 });
             }
 
