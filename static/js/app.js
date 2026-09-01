@@ -654,7 +654,7 @@ function updatePreview() {
     // Side preview (desktop)
     const sideInner = document.getElementById('side-preview-inner');
     if (sideInner) {
-        sideInner.innerHTML = html;
+        renderResumePrintPreview(sideInner, html);
         scaleSidePreview();
     }
 }
@@ -673,9 +673,7 @@ function updatePageIndicator() {
     const inner = document.getElementById('full-preview-inner');
     if (!indicator || !inner) return;
 
-    const pageHeight = 1123;
-    const estimatedHeight = inner.scrollHeight || inner.offsetHeight || pageHeight;
-    const pageCount = clampResumePageCount(estimatedHeight / pageHeight);
+    const pageCount = Number(inner.dataset.printPageCount) || 1;
     indicator.textContent = `Page 1 of ${pageCount}`;
 }
 
@@ -684,7 +682,9 @@ function renderFullPreview() {
     const html = ResumeTemplates.render(selectedTemplate, resumeData);
     const inner = document.getElementById('full-preview-inner');
     if (!inner) return;
-    inner.innerHTML = html;
+    const preview = renderResumePrintPreview(inner, html);
+    inner.dataset.printPageCount = preview.pageCount;
+    inner.dataset.printPreviewHeight = preview.totalHeightPx;
 
     requestAnimationFrame(() => {
         const container = document.getElementById('full-preview');
@@ -692,12 +692,11 @@ function renderFullPreview() {
 
         const containerWidth = container.clientWidth;
         const scale = containerWidth / 794;
-        const pageHeight = 1123 * scale;
-        const estimatedHeight = inner.scrollHeight || inner.offsetHeight || pageHeight;
-        const pageCount = clampResumePageCount(estimatedHeight / (1123 * scale));
+        const previewHeight = Number(inner.dataset.printPreviewHeight) || 1123;
 
         inner.style.transform = `scale(${scale})`;
-        container.style.height = `${pageHeight * pageCount}px`;
+        container.style.height = `${previewHeight * scale}px`;
+        container.style.background = '#e2e8f0';
         updatePageIndicator();
     });
 }

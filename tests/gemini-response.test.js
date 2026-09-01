@@ -8,7 +8,8 @@ const { extractGeminiText, parseGeminiJsonResponse } = require('../api/gemini.js
 const {
   clampResumePageCount,
   getA4PdfPageMetrics,
-  getPdfCanvasPageSliceHeight
+  getPdfCanvasPageSliceHeight,
+  prepareResumeForPrintLayout
 } = require('../static/js/resumePageUtils.js');
 
 test('extractGeminiText reads text from Gemini response parts', () => {
@@ -59,6 +60,24 @@ test('PDF slices use no side margins and reserve a 0.5-inch second-page top marg
   assert.equal(sliceHeight, Math.round(metrics.cssPrintableHeightPx * 2));
   assert.equal(secondPageSliceHeight, Math.round(secondPageMetrics.cssPrintableHeightPx * 2));
   assert.ok(secondPageSliceHeight < sliceHeight);
+});
+
+test('print preview layout removes first-page template margins and caps output at two pages', () => {
+  const firstPageMetrics = getA4PdfPageMetrics();
+  const secondPageMetrics = getA4PdfPageMetrics({ topMarginMm: 12.7 });
+  const contentRoot = {
+    style: {},
+    scrollHeight: 3000,
+    offsetHeight: 3000
+  };
+
+  const layout = prepareResumeForPrintLayout(contentRoot, firstPageMetrics, secondPageMetrics);
+
+  assert.equal(contentRoot.style.paddingTop, '0');
+  assert.equal(contentRoot.style.paddingLeft, '0');
+  assert.equal(contentRoot.style.paddingRight, '0');
+  assert.equal(layout.pageCount, 2);
+  assert.ok(layout.contentHeightPx <= firstPageMetrics.cssPrintableHeightPx + secondPageMetrics.cssPrintableHeightPx);
 });
 
 test('pdf export wrapper stays visible so captured content is not blank', () => {
@@ -165,5 +184,5 @@ test('pdf export wrapper stays visible so captured content is not blank', () => 
   assert.equal(result.exportNode.style.visibility, 'visible');
   assert.equal(result.exportNode.style.display, 'block');
   assert.ok(result.exportNode.innerHTML.length > 0);
-  assert.ok(adminJs.includes("contentRoot.style.paddingTop = '0'"));
+  assert.ok(fs.readFileSync(path.join(__dirname, '../static/js/resumePageUtils.js'), 'utf8').includes("contentRoot.style.paddingTop = '0'"));
 });

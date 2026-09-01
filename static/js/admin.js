@@ -248,9 +248,7 @@ btnSearch.addEventListener('click', () => {
 function updateAdminPageIndicator() {
     if (!adminPageIndicator || !adminPreviewInner) return;
 
-    const pageHeight = 1123;
-    const estimatedHeight = adminPreviewInner.scrollHeight || adminPreviewInner.offsetHeight || pageHeight;
-    const pageCount = clampResumePageCount(estimatedHeight / pageHeight);
+    const pageCount = Number(adminPreviewInner.dataset.printPageCount) || 1;
     adminPageIndicator.textContent = `Page 1 of ${pageCount}`;
 }
 
@@ -260,10 +258,10 @@ function scaleAdminPreview() {
 
     const containerWidth = container.clientWidth;
     const scale = containerWidth / 794;
-    const contentHeight = adminPreviewInner.scrollHeight || 1123;
-    const pageCount = clampResumePageCount(contentHeight / 1123);
+    const previewHeight = Number(adminPreviewInner.dataset.printPreviewHeight) || 1123;
     adminPreviewInner.style.transform = `scale(${scale})`;
-    container.style.height = `${(1123 * pageCount) * scale}px`;
+    container.style.height = `${previewHeight * scale}px`;
+    container.style.background = '#e2e8f0';
     updateAdminPageIndicator();
 }
 
@@ -291,7 +289,9 @@ function openDetailModal(order) {
             photoShape: order.photoShape || order.resumeData.photoShape || 'circle'
         };
         const html = ResumeTemplates.render(order.templateType || 'ats_classic', renderData);
-        adminPreviewInner.innerHTML = html;
+        const preview = renderResumePrintPreview(adminPreviewInner, html);
+        adminPreviewInner.dataset.printPageCount = preview.pageCount;
+        adminPreviewInner.dataset.printPreviewHeight = preview.totalHeightPx;
 
         requestAnimationFrame(() => {
             scaleAdminPreview();
@@ -418,29 +418,8 @@ function preparePdfExportForPagination(pdfExport, firstPageMetrics, secondPageMe
         return Math.ceil(Math.max(firstPageMetrics.cssPrintableHeightPx, pdfExport.exportNode.scrollHeight));
     }
 
-    // Templates use a minimum A4 height for the on-screen preview. Let the
-    // export use its natural height so a short resume remains a single page.
-    contentRoot.style.height = 'auto';
-    contentRoot.style.minHeight = '0';
-    contentRoot.style.overflow = 'visible';
-    contentRoot.style.paddingTop = '0';
-    contentRoot.style.paddingLeft = '0';
-    contentRoot.style.paddingRight = '0';
-
-    let contentHeight = Math.max(contentRoot.scrollHeight, contentRoot.offsetHeight);
-    const maximumContentHeight = firstPageMetrics.cssPrintableHeightPx + secondPageMetrics.cssPrintableHeightPx;
-
-    // Keep all content in two pages when a resume is long. Expanding the
-    // layout before scaling preserves the full page width and avoids clipping.
-    if (contentHeight > maximumContentHeight) {
-        const scale = maximumContentHeight / contentHeight;
-        contentRoot.style.width = `${pageMetrics.contentWidthPx / scale}px`;
-        contentRoot.style.transform = `scale(${scale})`;
-        contentRoot.style.transformOrigin = 'top left';
-        contentHeight = Math.ceil(Math.max(contentRoot.scrollHeight, contentRoot.offsetHeight) * scale);
-    }
-
-    const exportHeight = Math.ceil(Math.max(firstPageMetrics.cssPrintableHeightPx, contentHeight));
+    const layout = prepareResumeForPrintLayout(contentRoot, firstPageMetrics, secondPageMetrics);
+    const exportHeight = Math.ceil(Math.max(firstPageMetrics.cssPrintableHeightPx, layout.contentHeightPx));
     pdfExport.exportNode.style.height = `${exportHeight}px`;
     return exportHeight;
 }
