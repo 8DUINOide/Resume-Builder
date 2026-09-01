@@ -68,6 +68,42 @@ function getDistinctCustomerEmails(orders = []) {
     return Array.from(uniqueEmails).sort();
 }
 
+async function getCustomerCountFromUsersCollection() {
+    try {
+        const usersSnapshot = await db.collection('users').get();
+        const uniqueCustomerEmails = new Set();
+
+        usersSnapshot.forEach((userDoc) => {
+            const data = userDoc.data() || {};
+            const role = String(data.role || '').trim().toUpperCase();
+            if (role === 'ADMIN') {
+                return;
+            }
+
+            const emailCandidates = [
+                data.email,
+                data.userEmail,
+                data.personalInfo?.email,
+                data.profile?.email,
+                data.customerEmail
+            ];
+
+            for (const candidate of emailCandidates) {
+                const normalized = normalizeCustomerEmail(candidate);
+                if (normalized) {
+                    uniqueCustomerEmails.add(normalized);
+                    break;
+                }
+            }
+        });
+
+        return uniqueCustomerEmails.size;
+    } catch (error) {
+        console.error('Error loading customer count from Firestore users collection:', error);
+        return getDistinctCustomerEmails(ordersList).length;
+    }
+}
+
 // --- DOM Elements ---
 const loginScreen = document.getElementById('admin-login');
 const adminShell = document.getElementById('admin-shell');
@@ -168,10 +204,10 @@ function fetchOrders() {
     spinner.classList.remove('hidden');
     unsubscribeOrders = db.collection('orders')
         .orderBy('createdAt', 'desc')
-        .onSnapshot(snapshot => {
+        .onSnapshot(async snapshot => {
             ordersList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             renderOrders();
-            updateStats();
+            await updateStats();
             spinner.classList.add('hidden');
         }, error => {
             console.error("Error fetching orders: ", error);
@@ -231,7 +267,7 @@ function renderOrders() {
     }
 }
 
-function updateStats() {
+async function updateStats() {
     const total = ordersList.length;
     const pending = ordersList.filter(o => o.status === 'pending').length;
 
@@ -242,7 +278,7 @@ function updateStats() {
         return d.toDateString() === today;
     }).length;
 
-    const totalCustomers = getDistinctCustomerEmails(ordersList).length;
+    const totalCustomers = await getCustomerCountFromUsersCollection();
 
     statTotal.textContent = total;
     statPending.textContent = pending;
