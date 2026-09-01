@@ -61,7 +61,6 @@ const adminPreviewInner = document.getElementById('admin-preview-inner');
 const adminPageIndicator = document.getElementById('admin-page-indicator');
 
 // Actions
-const btnMarkPaid = document.getElementById('btn-mark-paid');
 const btnDownloadPdfAdmin = document.getElementById('btn-download-pdf-admin');
 const btnMarkFulfilled = document.getElementById('btn-mark-fulfilled');
 const btnDelete = document.getElementById('btn-delete-order');
@@ -338,7 +337,6 @@ async function updateOrderStatus(newStatus) {
     }
 }
 
-btnMarkPaid.addEventListener('click', () => updateOrderStatus('paid'));
 btnMarkFulfilled.addEventListener('click', () => updateOrderStatus('fulfilled'));
 
 btnDelete.addEventListener('click', async () => {
@@ -477,7 +475,6 @@ if (btnDownloadPdfAdmin) {
             }
 
             pdf.save(filename);
-            updateOrderStatus('printed');
         } catch (err) {
             console.error('PDF generation error:', err);
             alert('Failed to generate PDF.');
@@ -973,8 +970,6 @@ btnPrint.addEventListener('click', () => {
         photoShape: selectedOrder.photoShape || selectedOrder.resumeData.photoShape || 'circle'
     };
     const resumeHtml = ResumeTemplates.render(selectedOrder.templateType || 'ats_classic', renderData);
-
-    updateOrderStatus('printed');
 
     printWindow.document.write(`
         <!DOCTYPE html>
