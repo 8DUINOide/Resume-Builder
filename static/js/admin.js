@@ -405,7 +405,7 @@ function buildPdfExportNode(order) {
 }
 
 if (btnDownloadPdfAdmin) {
-    btnDownloadPdfAdmin.addEventListener('click', () => {
+    btnDownloadPdfAdmin.addEventListener('click', async () => {
         if (!selectedOrder) return;
 
         const pdfExport = buildPdfExportNode(selectedOrder);
@@ -417,11 +417,12 @@ if (btnDownloadPdfAdmin) {
         const p = selectedOrder.resumeData?.personalInfo || {};
         const filename = `${p.fullName || 'Resume'}_${selectedOrder.refId}.pdf`;
 
-        const opt = {
-            margin: [12, 10, 12, 10],
-            filename: filename,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: {
+        const originalText = btnDownloadPdfAdmin.innerHTML;
+        btnDownloadPdfAdmin.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
+        btnDownloadPdfAdmin.disabled = true;
+
+        try {
+            const canvas = await html2canvas(pdfExport.exportNode, {
                 scale: 2,
                 useCORS: true,
                 backgroundColor: '#ffffff',
@@ -431,27 +432,60 @@ if (btnDownloadPdfAdmin) {
                 height: Math.max(1123, pdfExport.exportNode.scrollHeight + 40),
                 windowWidth: 794,
                 windowHeight: Math.max(1123, pdfExport.exportNode.scrollHeight + 40)
-            },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css'] }
-        };
+            });
 
-        const originalText = btnDownloadPdfAdmin.innerHTML;
-        btnDownloadPdfAdmin.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
-        btnDownloadPdfAdmin.disabled = true;
+            const { jsPDF } = window.jspdf || {};
+            if (!jsPDF) {
+                throw new Error('jsPDF is not available.');
+            }
 
-        html2pdf().set(opt).from(pdfExport.exportNode).save().then(() => {
-            btnDownloadPdfAdmin.innerHTML = originalText;
-            btnDownloadPdfAdmin.disabled = false;
-            pdfExport.wrapper.remove();
+            const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const pagePxHeight = 1123 * 2;
+            const totalPages = Math.max(1, Math.ceil(canvas.height / pagePxHeight));
+
+            for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
+                if (pageIndex > 0) {
+                    pdf.addPage();
+                }
+
+                const cropHeight = Math.min(pagePxHeight, canvas.height - (pageIndex * pagePxHeight));
+                const pageCanvas = document.createElement('canvas');
+                pageCanvas.width = canvas.width;
+                pageCanvas.height = cropHeight;
+                const ctx = pageCanvas.getContext('2d');
+                ctx.drawImage(
+                    canvas,
+                    0,
+                    pageIndex * pagePxHeight,
+                    canvas.width,
+                    cropHeight,
+                    0,
+                    0,
+                    canvas.width,
+                    cropHeight
+                );
+
+                const pageImage = pageCanvas.toDataURL('image/png');
+                const imgProps = pdf.getImageProperties(pageImage);
+                const ratio = Math.min(pageWidth / imgProps.width, pageHeight / imgProps.height);
+                const imgWidth = imgProps.width * ratio;
+                const imgHeight = imgProps.height * ratio;
+
+                pdf.addImage(pageImage, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+            }
+
+            pdf.save(filename);
             updateOrderStatus('printed');
-        }).catch(err => {
+        } catch (err) {
             console.error('PDF generation error:', err);
             alert('Failed to generate PDF.');
+        } finally {
             btnDownloadPdfAdmin.innerHTML = originalText;
             btnDownloadPdfAdmin.disabled = false;
             pdfExport.wrapper.remove();
-        });
+        }
     });
 }
 
