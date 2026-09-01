@@ -384,7 +384,7 @@ function buildPdfExportNode(order) {
     exportNode.style.background = '#ffffff';
     exportNode.style.boxSizing = 'border-box';
     exportNode.style.margin = '0';
-    exportNode.style.padding = '0';
+    exportNode.style.padding = '48px';
     exportNode.style.position = 'relative';
     exportNode.style.overflow = 'visible';
     exportNode.style.fontFamily = 'Inter, Arial, sans-serif';

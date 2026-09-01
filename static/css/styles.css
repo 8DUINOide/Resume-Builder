@@ -803,7 +803,7 @@ input, textarea, select { font-family: inherit; }
   left: 0;
   width: 794px;
   height: 1123px;
-  overflow: hidden;
+  overflow: visible;
   transform-origin: top left;
 }
 
