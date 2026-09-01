@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const { extractGeminiText, parseGeminiJsonResponse } = require('../api/gemini.js');
+const { clampResumePageCount } = require('../static/js/resumePageUtils.js');
 
 test('extractGeminiText reads text from Gemini response parts', () => {
   const response = {
@@ -28,4 +29,11 @@ test('parseGeminiJsonResponse strips markdown fences and parses JSON', () => {
   };
 
   assert.deepEqual(parseGeminiJsonResponse(response), { personalInfo: { fullName: 'Jane Doe' } });
+});
+
+test('resume page count stays within 1 to 2 pages', () => {
+  assert.equal(clampResumePageCount(0.8), 1);
+  assert.equal(clampResumePageCount(1.2), 2);
+  assert.equal(clampResumePageCount(3.2), 2);
+  assert.equal(clampResumePageCount(0), 1);
 });

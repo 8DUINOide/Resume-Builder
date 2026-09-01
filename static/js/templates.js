@@ -58,7 +58,7 @@ const ResumeTemplates = {
     const t = this._getTheme(data);
     const contactParts = [p.email, p.phone, p.location, p.linkedin, p.website].filter(Boolean);
     return `
-    <div style="width:794px;height:1123px;min-height:1123px;padding:50px 56px;font-family:'Inter',Arial,sans-serif;color:#1a1a1a;line-height:1.55;background:white;box-sizing:border-box;overflow:hidden;page-break-inside:avoid;break-inside:avoid;">
+    <div style="width:794px;min-height:1123px;padding:50px 56px;font-family:'Inter',Arial,sans-serif;color:#1a1a1a;line-height:1.55;background:white;box-sizing:border-box;page-break-inside:avoid;break-inside:avoid;">
       <!-- Name -->
       <h1 style="font-size:28px;font-weight:800;margin:0 0 6px;letter-spacing:-0.5px;">${this._escapeHtml(p.fullName || 'Your Name')}</h1>
       <!-- Contact -->
@@ -130,7 +130,7 @@ const ResumeTemplates = {
     const photoHtml = p.photoUrl ? `<img src="${p.photoUrl}" style="width:${ps.size}px;height:${ps.size}px;border-radius:${ps.borderRadius};object-fit:cover;border:3px solid rgba(255,255,255,0.3);margin-bottom:16px;">` : '';
 
     return `
-    <div style="width:794px;height:1123px;min-height:1123px;display:flex;font-family:'Inter',Arial,sans-serif;color:#1a1a1a;line-height:1.5;background:white;box-sizing:border-box;overflow:hidden;page-break-inside:avoid;break-inside:avoid;">
+    <div style="width:794px;min-height:1123px;display:flex;font-family:'Inter',Arial,sans-serif;color:#1a1a1a;line-height:1.5;background:white;box-sizing:border-box;page-break-inside:avoid;break-inside:avoid;">
       <!-- Sidebar -->
       <div style="width:260px;background:${t.primary};color:white;padding:40px 24px;flex-shrink:0;">
         <div style="text-align:center;margin-bottom:24px;">
@@ -298,7 +298,7 @@ const ResumeTemplates = {
     const contactParts = [p.email, p.phone, p.location, p.linkedin].filter(Boolean);
 
     return `
-    <div style="width:794px;height:1123px;min-height:1123px;padding:60px 64px;font-family:'Inter',Arial,sans-serif;color:#1a1a1a;line-height:1.55;background:white;box-sizing:border-box;overflow:hidden;page-break-inside:avoid;break-inside:avoid;">
+    <div style="width:794px;min-height:1123px;padding:60px 64px;font-family:'Inter',Arial,sans-serif;color:#1a1a1a;line-height:1.55;background:white;box-sizing:border-box;page-break-inside:avoid;break-inside:avoid;">
       <!-- Header -->
       <div style="text-align:center;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid ${t.light};">
         <h1 style="font-size:32px;font-weight:300;margin:0 0 8px;letter-spacing:3px;text-transform:uppercase;color:#111;">${this._escapeHtml(p.fullName || 'Your Name')}</h1>

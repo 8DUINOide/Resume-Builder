@@ -675,7 +675,7 @@ function updatePageIndicator() {
 
     const pageHeight = 1123;
     const estimatedHeight = inner.scrollHeight || inner.offsetHeight || pageHeight;
-    const pageCount = Math.max(1, Math.ceil(estimatedHeight / pageHeight));
+    const pageCount = clampResumePageCount(estimatedHeight / pageHeight);
     indicator.textContent = `Page 1 of ${pageCount}`;
 }
 
@@ -686,7 +686,6 @@ function renderFullPreview() {
     if (!inner) return;
     inner.innerHTML = html;
 
-    // Scale to fit the page while preserving the full page height for the preview container.
     requestAnimationFrame(() => {
         const container = document.getElementById('full-preview');
         if (!container) return;
@@ -694,9 +693,11 @@ function renderFullPreview() {
         const containerWidth = container.clientWidth;
         const scale = containerWidth / 794;
         const pageHeight = 1123 * scale;
+        const estimatedHeight = inner.scrollHeight || inner.offsetHeight || pageHeight;
+        const pageCount = clampResumePageCount(estimatedHeight / (1123 * scale));
 
         inner.style.transform = `scale(${scale})`;
-        container.style.height = `${pageHeight}px`;
+        container.style.height = `${pageHeight * pageCount}px`;
         updatePageIndicator();
     });
 }

@@ -251,7 +251,7 @@ function updateAdminPageIndicator() {
 
     const pageHeight = 1123;
     const estimatedHeight = adminPreviewInner.scrollHeight || adminPreviewInner.offsetHeight || pageHeight;
-    const pageCount = Math.max(1, Math.ceil(estimatedHeight / pageHeight));
+    const pageCount = clampResumePageCount(estimatedHeight / pageHeight);
     adminPageIndicator.textContent = `Page 1 of ${pageCount}`;
 }
 
@@ -261,8 +261,10 @@ function scaleAdminPreview() {
 
     const containerWidth = container.clientWidth;
     const scale = containerWidth / 794;
+    const contentHeight = adminPreviewInner.scrollHeight || 1123;
+    const pageCount = clampResumePageCount(contentHeight / 1123);
     adminPreviewInner.style.transform = `scale(${scale})`;
-    container.style.height = `${1123 * scale}px`;
+    container.style.height = `${(1123 * pageCount) * scale}px`;
     updateAdminPageIndicator();
 }
 
@@ -370,10 +372,12 @@ function buildPdfExportNode(order) {
     exportNode.innerHTML = `
         <style>
             * { box-sizing: border-box; }
+            body, html { margin: 0; }
             div, h1, h2, h3, p, ul, li, section, article {
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
             }
+            .resume-page-break { page-break-before: always; }
         </style>
         ${resumeHtml}
     `;
@@ -384,7 +388,7 @@ function buildPdfExportNode(order) {
     exportNode.style.margin = '0';
     exportNode.style.padding = '0';
     exportNode.style.position = 'relative';
-    exportNode.style.overflow = 'hidden';
+    exportNode.style.overflow = 'visible';
     exportNode.style.fontFamily = 'Inter, Arial, sans-serif';
 
     const wrapper = document.createElement('div');
@@ -414,7 +418,7 @@ if (btnDownloadPdfAdmin) {
         const filename = `${p.fullName || 'Resume'}_${selectedOrder.refId}.pdf`;
 
         const opt = {
-            margin: [25.4, 10, 25.4, 10],
+            margin: [12, 10, 12, 10],
             filename: filename,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: {
@@ -424,9 +428,12 @@ if (btnDownloadPdfAdmin) {
                 scrollX: 0,
                 scrollY: 0,
                 width: 794,
-                height: 1123
+                height: Math.max(1123, pdfExport.exportNode.scrollHeight + 40),
+                windowWidth: 794,
+                windowHeight: Math.max(1123, pdfExport.exportNode.scrollHeight + 40)
             },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css'] }
         };
 
         const originalText = btnDownloadPdfAdmin.innerHTML;
