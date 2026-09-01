@@ -67,7 +67,7 @@ const ResumeTemplates = {
   },
 
   _pageFrame(extra = '') {
-    return `width:794px;min-height:1123px;padding:48px;box-sizing:border-box;background:white;page-break-inside:avoid;break-inside:avoid;word-break:break-word;overflow-wrap:anywhere;white-space:normal;${extra}`;
+    return `width:794px;min-height:1123px;padding:0;box-sizing:border-box;background:white;page-break-inside:avoid;break-inside:avoid;word-break:break-word;overflow-wrap:anywhere;white-space:normal;${extra}`;
   },
 
   // ===========================================
@@ -79,6 +79,7 @@ const ResumeTemplates = {
     const contactParts = [p.email, p.phone, p.location, p.linkedin, p.website].filter(Boolean);
     return `
     <div style="${this._pageFrame("font-family:'Inter',Arial,sans-serif;color:#1a1a1a;line-height:1.55;")}">
+      <div style="padding:48px;box-sizing:border-box;">
       <!-- Name -->
       <h1 style="font-size:28px;font-weight:800;margin:0 0 6px;letter-spacing:-0.5px;">${this._escapeHtml(p.fullName || 'Your Name')}</h1>
       <!-- Contact -->
@@ -137,6 +138,7 @@ const ResumeTemplates = {
           ${proj.description ? `<p style="font-size:11.5px;color:#4B5563;margin:4px 0 0;">${this._nl2br(proj.description)}</p>` : ''}
         </div>`).join('')}
       </div>` : ''}
+      </div>
     </div>`;
   },
 
@@ -324,6 +326,7 @@ const ResumeTemplates = {
 
     return `
     <div style="${this._pageFrame("font-family:'Inter',Arial,sans-serif;color:#1a1a1a;line-height:1.55;")}">
+      <div style="padding:48px;box-sizing:border-box;">
       <!-- Header -->
       <div style="text-align:center;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid ${t.light};">
         <h1 style="font-size:32px;font-weight:300;margin:0 0 8px;letter-spacing:3px;text-transform:uppercase;color:#111;">${this._escapeHtml(p.fullName || 'Your Name')}</h1>
@@ -385,6 +388,7 @@ const ResumeTemplates = {
           ${proj.description ? `<p style="font-size:11.5px;color:#4B5563;margin:3px 0 0;">${this._nl2br(proj.description)}</p>` : ''}
         </div>`).join('')}
       </div>` : ''}
+      </div>
     </div>`;
   },
 

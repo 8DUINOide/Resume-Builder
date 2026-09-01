@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+  <style>
+    body { margin: 0; padding: 24px; background: #e2e8f0; font: 14px Arial, sans-serif; }
+    #previews { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+    .template-preview { width: 238px; }
+    .template-preview h2 { margin: 0 0 8px; font-size: 14px; }
+    .resume { width: 794px; transform: scale(.3); transform-origin: top left; }
+    .template-preview .frame { width: 238px; height: 337px; overflow: hidden; background: #fff; box-shadow: 0 1px 3px #94a3b8; }
+  </style>
+</head>
+<body>
+  <div id="previews"></div>
+  <script src="../static/js/resumePageUtils.js"></script>
+  <script src="../static/js/templates.js"></script>
+  <script>
+    const data = {
+      personalInfo: { fullName: 'Jane Doe', email: 'jane@example.com', phone: '+1 555 0100', location: 'Springfield', photoUrl: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect width="100%25" height="100%25" fill="%2394a3b8"/%3E%3Ccircle cx="100" cy="75" r="35" fill="%23fff"/%3E%3Cpath d="M35 190c15-55 115-55 130 0" fill="%23fff"/%3E%3C/svg%3E' },
+      summary: 'Customer-focused professional with experience in communication, service, and day-to-day operations.',
+      experience: [{ title: 'Service Associate', company: 'Example Company', startDate: '2022', endDate: 'Present', description: 'Helped customers with their needs\nOrganized daily records' }],
+      education: [{ degree: 'High School Diploma', school: 'Springfield High School', startDate: '2018', endDate: '2022' }],
+      skills: [{ name: 'Communication' }, { name: 'Customer Service' }],
+      projects: [{ name: 'Community Event', description: 'Coordinated a local community event.' }],
+      photoSize: 100
+    };
+    const names = {
+      ats_classic: 'ATS Classic',
+      canva_modern_1: 'Modern',
+      canva_creative_2: 'Creative',
+      canva_minimal_3: 'Minimal',
+      canva_executive_4: 'Executive'
+    };
+    Object.entries(names).forEach(([key, name]) => {
+      const wrapper = document.createElement('section');
+      wrapper.className = 'template-preview';
+      wrapper.innerHTML = `<h2>${name}</h2><div class="frame"><div class="resume"></div></div>`;
+      wrapper.querySelector('.resume').innerHTML = ResumeTemplates.render(key, data);
+      const root = wrapper.querySelector('.resume > *');
+      prepareResumeForPrintLayout(root, getA4PdfPageMetrics(), getA4PdfPageMetrics({ topMarginMm: 12.7 }));
+      document.getElementById('previews').appendChild(wrapper);
+    });
+  </script>
+</body>
+</html>

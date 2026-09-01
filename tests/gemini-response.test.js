@@ -227,3 +227,23 @@ test('skill guidance is profession-neutral and profile photos stay centered at e
     }
   }
 });
+
+test('each template keeps its intended content spacing without adding page margins', () => {
+  const templatesJs = fs.readFileSync(path.join(__dirname, '../static/js/templates.js'), 'utf8');
+  const templates = vm.runInNewContext(`${templatesJs}\nResumeTemplates`, {});
+  const data = {
+    personalInfo: { fullName: 'Jane Doe' },
+    summary: 'Example summary',
+    experience: [],
+    education: [],
+    skills: [],
+    projects: []
+  };
+
+  assert.ok(templates._pageFrame().includes('padding:0'));
+  assert.ok(templates.render('ats_classic', data).includes('padding:48px;box-sizing:border-box;'));
+  assert.ok(templates.render('canva_minimal_3', data).includes('padding:48px;box-sizing:border-box;'));
+  assert.ok(templates.render('canva_modern_1', data).includes('padding:40px 36px'));
+  assert.ok(templates.render('canva_creative_2', data).includes('padding:30px 50px'));
+  assert.ok(templates.render('canva_executive_4', data).includes('padding:30px 50px'));
+});
