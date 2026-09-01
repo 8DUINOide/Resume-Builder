@@ -1110,12 +1110,13 @@ if (btnAdminStartScan) {
             if (extracted.experience && extracted.experience.length > 0) {
                 document.getElementById('edit-exp-list').innerHTML = '';
                 extracted.experience.forEach(exp => {
-                    const card = createExpCard();
-                    card.querySelector('.exp-company').value = exp.company || '';
-                    card.querySelector('.exp-role').value = exp.role || '';
-                    card.querySelector('.exp-date').value = exp.date || '';
-                    card.querySelector('.exp-desc').value = exp.description || '';
-                    document.getElementById('edit-exp-list').appendChild(card);
+                    adminAddExp({
+                        title: exp.title || exp.role || '',
+                        company: exp.company || '',
+                        startDate: exp.startDate || exp.date || '',
+                        endDate: exp.endDate || '',
+                        description: exp.description || ''
+                    });
                 });
             }
 
@@ -1123,11 +1124,13 @@ if (btnAdminStartScan) {
             if (extracted.education && extracted.education.length > 0) {
                 document.getElementById('edit-edu-list').innerHTML = '';
                 extracted.education.forEach(edu => {
-                    const card = createEduCard();
-                    card.querySelector('.edu-school').value = edu.school || '';
-                    card.querySelector('.edu-degree').value = edu.degree || '';
-                    card.querySelector('.edu-date').value = edu.date || '';
-                    document.getElementById('edit-edu-list').appendChild(card);
+                    adminAddEdu({
+                        degree: edu.degree || '',
+                        school: edu.school || '',
+                        startDate: edu.startDate || edu.date || '',
+                        endDate: edu.endDate || '',
+                        gpa: edu.gpa || ''
+                    });
                 });
             }
 
