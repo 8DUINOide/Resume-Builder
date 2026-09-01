@@ -452,6 +452,8 @@ if (btnDownloadPdfAdmin) {
             const pageHeight = pdf.internal.pageSize.getHeight();
             const pagePxHeight = 1123;
             const totalPages = Math.max(1, Math.ceil(canvas.height / pagePxHeight));
+            const xOffset = 0;
+            const bottomMargin = 8;
 
             for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
                 if (pageIndex > 0) {
@@ -477,11 +479,12 @@ if (btnDownloadPdfAdmin) {
 
                 const pageImage = pageCanvas.toDataURL('image/png');
                 const imgProps = pdf.getImageProperties(pageImage);
-                const ratio = Math.min(pageWidth / imgProps.width, pageHeight / imgProps.height);
+                const ratio = Math.min((pageWidth - xOffset * 2) / imgProps.width, (pageHeight - bottomMargin) / imgProps.height);
                 const imgWidth = imgProps.width * ratio;
                 const imgHeight = imgProps.height * ratio;
+                const yOffset = pageHeight - imgHeight - bottomMargin;
 
-                pdf.addImage(pageImage, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+                pdf.addImage(pageImage, 'PNG', xOffset, yOffset, imgWidth, imgHeight, undefined, 'FAST');
             }
 
             pdf.save(filename);
