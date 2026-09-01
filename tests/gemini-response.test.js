@@ -186,3 +186,12 @@ test('pdf export wrapper stays visible so captured content is not blank', () => 
   assert.ok(result.exportNode.innerHTML.length > 0);
   assert.ok(fs.readFileSync(path.join(__dirname, '../static/js/resumePageUtils.js'), 'utf8').includes("contentRoot.style.paddingTop = '0'"));
 });
+
+test('customer preview uses the same paginated print renderer as admin', () => {
+  const appJs = fs.readFileSync(path.join(__dirname, '../static/js/app.js'), 'utf8');
+  const adminJs = fs.readFileSync(path.join(__dirname, '../static/js/admin.js'), 'utf8');
+
+  assert.ok(appJs.includes('renderResumePrintPreview(inner, html)'));
+  assert.ok(adminJs.includes('renderResumePrintPreview(adminPreviewInner, html)'));
+  assert.ok(appJs.includes("container.style.overflow = 'visible'"));
+});

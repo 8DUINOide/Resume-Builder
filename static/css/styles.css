@@ -807,6 +807,11 @@ input, textarea, select { font-family: inherit; }
   transform-origin: top left;
 }
 
+/* The customer preview can contain two physical A4 page frames. */
+.full-preview-inner .print-preview-page + .print-preview-page {
+  border-top: 1px solid #CBD5E1;
+}
+
 .page-indicator {
   position: absolute;
   top: 12px;

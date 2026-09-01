@@ -657,6 +657,11 @@ function updatePreview() {
         renderResumePrintPreview(sideInner, html);
         scaleSidePreview();
     }
+
+    // Keep the customer-facing print preview synchronized while step 4 is open.
+    if (currentStep === TOTAL_STEPS) {
+        renderFullPreview();
+    }
 }
 
 function scaleSidePreview() {
@@ -697,6 +702,8 @@ function renderFullPreview() {
         inner.style.transform = `scale(${scale})`;
         container.style.height = `${previewHeight * scale}px`;
         container.style.background = '#e2e8f0';
+        container.style.aspectRatio = 'auto';
+        container.style.overflow = 'visible';
         updatePageIndicator();
     });
 }
