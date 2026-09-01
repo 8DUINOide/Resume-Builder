@@ -379,13 +379,13 @@ function buildPdfExportNode(order) {
         </style>
         ${resumeHtml}
     `;
-    exportNode.style.width = '794px';
-    exportNode.style.minHeight = '1123px';
+    exportNode.style.width = '595px';
+    exportNode.style.minHeight = '842px';
     exportNode.style.height = 'auto';
     exportNode.style.background = '#ffffff';
     exportNode.style.boxSizing = 'border-box';
-    exportNode.style.margin = '0';
-    exportNode.style.padding = '48px';
+    exportNode.style.margin = '0 auto';
+    exportNode.style.padding = '0';
     exportNode.style.position = 'relative';
     exportNode.style.overflow = 'visible';
     exportNode.style.fontFamily = 'Inter, Arial, sans-serif';
@@ -394,7 +394,7 @@ function buildPdfExportNode(order) {
     wrapper.style.position = 'fixed';
     wrapper.style.left = '-9999px';
     wrapper.style.top = '0';
-    wrapper.style.width = '794px';
+    wrapper.style.width = '595px';
     wrapper.style.background = '#ffffff';
     wrapper.style.zIndex = '2147483647';
     wrapper.appendChild(exportNode);
@@ -421,16 +421,16 @@ if (btnDownloadPdfAdmin) {
         btnDownloadPdfAdmin.disabled = true;
 
         try {
-            const fullHeight = Math.max(1123, pdfExport.exportNode.scrollHeight + 80);
+            const fullHeight = Math.max(842, pdfExport.exportNode.scrollHeight + 40);
             const canvas = await html2canvas(pdfExport.exportNode, {
                 scale: 2,
                 useCORS: true,
                 backgroundColor: '#ffffff',
                 scrollX: 0,
                 scrollY: 0,
-                width: 794,
+                width: 595,
                 height: fullHeight,
-                windowWidth: 794,
+                windowWidth: 595,
                 windowHeight: fullHeight
             });
 
@@ -442,7 +442,8 @@ if (btnDownloadPdfAdmin) {
             const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
             const pageWidth = pdf.internal.pageSize.getWidth();
             const pageHeight = pdf.internal.pageSize.getHeight();
-            const pagePxHeight = 1123 * 2;
+            const marginMm = 8;
+            const pagePxHeight = 842 * 2;
             const totalPages = Math.max(1, Math.ceil(canvas.height / pagePxHeight));
 
             for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
@@ -469,11 +470,16 @@ if (btnDownloadPdfAdmin) {
 
                 const pageImage = pageCanvas.toDataURL('image/png');
                 const imgProps = pdf.getImageProperties(pageImage);
-                const ratio = Math.min(pageWidth / imgProps.width, pageHeight / imgProps.height);
+                const ratio = Math.min(
+                    (pageWidth - marginMm * 2) / imgProps.width,
+                    (pageHeight - marginMm * 2) / imgProps.height
+                );
                 const imgWidth = imgProps.width * ratio;
                 const imgHeight = imgProps.height * ratio;
+                const x = (pageWidth - imgWidth) / 2;
+                const y = (pageHeight - imgHeight) / 2;
 
-                pdf.addImage(pageImage, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+                pdf.addImage(pageImage, 'PNG', x, y, imgWidth, imgHeight, undefined, 'FAST');
             }
 
             pdf.save(filename);
