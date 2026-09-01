@@ -31,6 +31,43 @@ let unsubscribeOrders = null;
 let selectedOrder = null;
 let isCreatingMode = false;
 
+function normalizeCustomerEmail(value) {
+    if (typeof value !== 'string') {
+        return null;
+    }
+
+    const normalized = value.trim().toLowerCase();
+    if (!normalized || ['n/a', 'na', 'null', 'undefined', 'admin_created'].includes(normalized)) {
+        return null;
+    }
+
+    const compact = normalized.replace(/\s+/g, '');
+    return compact || null;
+}
+
+function getDistinctCustomerEmails(orders = []) {
+    const uniqueEmails = new Set();
+
+    orders.forEach(order => {
+        const candidates = [
+            order?.resumeData?.personalInfo?.email,
+            order?.userEmail,
+            order?.email,
+            order?.resumeData?.email,
+            order?.customerEmail
+        ];
+
+        candidates.forEach(candidate => {
+            const normalized = normalizeCustomerEmail(candidate);
+            if (normalized) {
+                uniqueEmails.add(normalized);
+            }
+        });
+    });
+
+    return Array.from(uniqueEmails).sort();
+}
+
 // --- DOM Elements ---
 const loginScreen = document.getElementById('admin-login');
 const adminShell = document.getElementById('admin-shell');
@@ -198,7 +235,6 @@ function updateStats() {
     const total = ordersList.length;
     const pending = ordersList.filter(o => o.status === 'pending').length;
 
-    // Simple today check
     const today = new Date().toDateString();
     const fulfilledToday = ordersList.filter(o => {
         if (o.status !== 'fulfilled' || !o.createdAt) return false;
@@ -206,15 +242,7 @@ function updateStats() {
         return d.toDateString() === today;
     }).length;
 
-    // Calculate unique customers based on email
-    const uniqueEmails = new Set();
-    ordersList.forEach(o => {
-        const email = o.resumeData?.personalInfo?.email || o.userEmail;
-        if (email && email !== 'N/A' && email !== 'admin_created') {
-            uniqueEmails.add(email.toLowerCase().trim());
-        }
-    });
-    const totalCustomers = uniqueEmails.size;
+    const totalCustomers = getDistinctCustomerEmails(ordersList).length;
 
     statTotal.textContent = total;
     statPending.textContent = pending;

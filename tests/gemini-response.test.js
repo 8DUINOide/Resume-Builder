@@ -187,6 +187,75 @@ test('pdf export wrapper stays visible so captured content is not blank', () => 
   assert.ok(fs.readFileSync(path.join(__dirname, '../static/js/resumePageUtils.js'), 'utf8').includes("contentRoot.style.paddingTop = '0'"));
 });
 
+test('customer total counts unique normalized emails and ignores placeholder values', () => {
+  const adminJs = fs.readFileSync(path.join(__dirname, '../static/js/admin.js'), 'utf8');
+  const makeDomElement = () => ({
+    textContent: '',
+    value: '',
+    style: {},
+    classList: { add() {}, remove() {}, toggle() {} },
+    innerHTML: '',
+    appendChild() {},
+    addEventListener() {},
+    querySelector() { return null; }
+  });
+
+  const context = {
+    document: {
+      getElementById() { return makeDomElement(); },
+      querySelectorAll() { return []; },
+      querySelector() { return null; }
+    },
+    firebase: {
+      apps: [],
+      initializeApp() {},
+      auth() {
+        return {
+          onAuthStateChanged() {},
+          signInWithPopup() { return Promise.resolve(); },
+          signOut() { return Promise.resolve(); }
+        };
+      },
+      firestore() {
+        return {
+          collection() {
+            return {
+              doc() {
+                return {
+                  get: async () => ({ exists: false, data: () => ({}) }),
+                  set: async () => {},
+                  update: async () => {},
+                  delete: async () => {}
+                };
+              },
+              orderBy() {
+                return { onSnapshot() { return () => {}; } };
+              }
+            };
+          }
+        };
+      }
+    },
+    console,
+    requestAnimationFrame(fn) { fn(); return 1; }
+  };
+
+  vm.runInNewContext(`${adminJs}\nthis.getDistinctCustomerEmails = getDistinctCustomerEmails;`, context);
+
+  const orders = [
+    { userEmail: 'alfrancisbadillapaz10@gmail.com', resumeData: { personalInfo: { email: 'ALFRANCISBADILLAPAZ10@GMAIL.COM' } } },
+    { userEmail: '03@gmail.com', resumeData: { personalInfo: { email: ' 03@gmail.com ' } } },
+    { userEmail: 'admin_created', resumeData: { personalInfo: { email: 'N/A' } } },
+    { userEmail: 'alfrancisbadillapaz10@gmail.com', resumeData: { personalInfo: { email: 'alfrancisbadillapaz10@gmail.com' } } },
+    { userEmail: ' 03@gmail.com ', resumeData: { personalInfo: { email: '' } } }
+  ];
+
+  const customerEmails = context.getDistinctCustomerEmails(orders);
+  assert.equal(customerEmails.length, 2);
+  assert.ok(customerEmails.includes('03@gmail.com'));
+  assert.ok(customerEmails.includes('alfrancisbadillapaz10@gmail.com'));
+});
+
 test('customer preview uses the same paginated print renderer as admin', () => {
   const appJs = fs.readFileSync(path.join(__dirname, '../static/js/app.js'), 'utf8');
   const adminJs = fs.readFileSync(path.join(__dirname, '../static/js/admin.js'), 'utf8');
