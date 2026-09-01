@@ -1,7 +1,87 @@
 // Vercel Serverless Function — Gemini API Proxy
 // Keeps the GEMINI_API_KEY secure on the server side
 
-module.exports = async function handler(req, res) {
+const GEMINI_MODEL_CANDIDATES = [
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash'
+];
+
+function extractGeminiText(response) {
+    if (!response || !response.candidates) return '';
+
+    const parts = response.candidates
+        .flatMap((candidate) => candidate?.content?.parts || [])
+        .filter((part) => typeof part?.text === 'string');
+
+    return parts
+        .map((part) => part.text.trim())
+        .filter(Boolean)
+        .join('\n');
+}
+
+function parseGeminiJsonResponse(response) {
+    const textContent = extractGeminiText(response);
+    if (!textContent) {
+        throw new Error('Gemini response did not include any text output');
+    }
+
+    const cleaned = textContent
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*$/gi, '')
+        .replace(/```/g, '')
+        .trim();
+
+    const objectStart = cleaned.indexOf('{');
+    const objectEnd = cleaned.lastIndexOf('}');
+    const jsonCandidate = objectStart >= 0 && objectEnd > objectStart
+        ? cleaned.slice(objectStart, objectEnd + 1)
+        : cleaned;
+
+    return JSON.parse(jsonCandidate);
+}
+
+async function fetchGeminiWithFallback(apiKey, requestBody) {
+    let lastError = null;
+
+    for (const model of GEMINI_MODEL_CANDIDATES) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+            });
+
+            const bodyText = await response.text();
+            if (!response.ok) {
+                const errorMessage = bodyText || `Gemini request failed with status ${response.status}`;
+                const isModelIssue = response.status === 404 || /not found|unsupported model|invalid model/i.test(errorMessage);
+                lastError = { status: response.status, message: errorMessage };
+
+                if (isModelIssue) {
+                    continue;
+                }
+
+                throw new Error(errorMessage);
+            }
+
+            return JSON.parse(bodyText || '{}');
+        } catch (error) {
+            lastError = { status: 500, message: error.message || 'Gemini request failed' };
+            if (error.message && /not found|unsupported model|invalid model/i.test(error.message)) {
+                continue;
+            }
+            throw error;
+        }
+    }
+
+    const errorDetails = lastError ? lastError.message : 'Gemini request failed';
+    throw new Error(errorDetails);
+}
+
+async function handler(req, res) {
     // CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -84,47 +164,29 @@ Important rules:
 - If a section doesn't exist in the resume, use an empty array
 - Return ONLY the JSON object, no markdown, no code fences, no explanation`;
 
-            const geminiRes = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [
-                                { text: extractPrompt },
-                                {
-                                    inlineData: {
-                                        mimeType: mimeType || 'image/jpeg',
-                                        data: imageBase64
-                                    }
-                                }
-                            ]
-                        }],
-                        generationConfig: {
-                            temperature: 0.1,
-                            maxOutputTokens: 4096
+            const geminiData = await fetchGeminiWithFallback(apiKey, {
+                contents: [{
+                    parts: [
+                        { text: extractPrompt },
+                        {
+                            inlineData: {
+                                mimeType: mimeType || 'image/jpeg',
+                                data: imageBase64
+                            }
                         }
-                    })
+                    ]
+                }],
+                generationConfig: {
+                    temperature: 0.1,
+                    maxOutputTokens: 4096
                 }
-            );
+            });
 
-            if (!geminiRes.ok) {
-                const errText = await geminiRes.text();
-                console.error('Gemini API error:', errText);
-                return res.status(geminiRes.status).json({ error: 'Gemini API error', details: errText });
-            }
-
-            const geminiData = await geminiRes.json();
-            const textContent = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-            // Try to parse the JSON from the response
             let parsedData;
             try {
-                // Remove potential markdown code fences
-                const cleaned = textContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-                parsedData = JSON.parse(cleaned);
+                parsedData = parseGeminiJsonResponse(geminiData);
             } catch (parseErr) {
+                const textContent = extractGeminiText(geminiData);
                 console.error('JSON parse error:', parseErr, 'Raw:', textContent);
                 return res.status(422).json({ error: 'Failed to parse AI response', raw: textContent });
             }
@@ -142,39 +204,23 @@ Important rules:
 
             const attirePrompt = prompt || "Change the person's clothing to professional business attire: a well-fitted charcoal gray suit with a crisp white dress shirt and a subtle dark tie. Keep the person's face, expression, hair, skin tone, and background exactly the same. The result should look natural, professionally photographed, and suitable for a formal resume or LinkedIn profile photo. Do NOT change anything about the person's face or identity.";
 
-            const geminiRes = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-image-generation:generateContent?key=${apiKey}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [
-                                { text: attirePrompt },
-                                {
-                                    inlineData: {
-                                        mimeType: mimeType || 'image/jpeg',
-                                        data: imageBase64
-                                    }
-                                }
-                            ]
-                        }],
-                        generationConfig: {
-                            responseModalities: ["TEXT", "IMAGE"]
+            const geminiData = await fetchGeminiWithFallback(apiKey, {
+                contents: [{
+                    parts: [
+                        { text: attirePrompt },
+                        {
+                            inlineData: {
+                                mimeType: mimeType || 'image/jpeg',
+                                data: imageBase64
+                            }
                         }
-                    })
+                    ]
+                }],
+                generationConfig: {
+                    responseModalities: ['TEXT', 'IMAGE']
                 }
-            );
+            });
 
-            if (!geminiRes.ok) {
-                const errText = await geminiRes.text();
-                console.error('Gemini API error:', errText);
-                return res.status(geminiRes.status).json({ error: 'Gemini API error', details: errText });
-            }
-
-            const geminiData = await geminiRes.json();
-            
-            // Look for image data in the response
             const parts = geminiData.candidates?.[0]?.content?.parts || [];
             let resultImageBase64 = null;
             let resultMimeType = 'image/png';
@@ -188,16 +234,15 @@ Important rules:
             }
 
             if (!resultImageBase64) {
-                // If no image was returned, report error with any text response
-                const textParts = parts.filter(p => p.text).map(p => p.text).join('\n');
-                return res.status(422).json({ 
-                    error: 'No image generated', 
-                    message: textParts || 'The AI did not return an image. Try a different photo.' 
+                const textParts = parts.filter((p) => p.text).map((p) => p.text).join('\n');
+                return res.status(422).json({
+                    error: 'No image generated',
+                    message: textParts || 'The AI did not return an image. Try a different photo.'
                 });
             }
 
-            return res.status(200).json({ 
-                success: true, 
+            return res.status(200).json({
+                success: true,
                 imageBase64: resultImageBase64,
                 mimeType: resultMimeType
             });
@@ -211,6 +256,9 @@ Important rules:
     }
 }
 
+module.exports = handler;
+module.exports.extractGeminiText = extractGeminiText;
+module.exports.parseGeminiJsonResponse = parseGeminiJsonResponse;
 module.exports.config = {
     maxDuration: 60
 };
