@@ -442,8 +442,7 @@ if (btnDownloadPdfAdmin) {
             const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
             const pageWidth = pdf.internal.pageSize.getWidth();
             const pageHeight = pdf.internal.pageSize.getHeight();
-            const bottomMarginMm = 8;
-            const pagePxHeight = 1123 * 2;
+            const pagePxHeight = 1123;
             const totalPages = Math.max(1, Math.ceil(canvas.height / pagePxHeight));
 
             for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
@@ -470,16 +469,11 @@ if (btnDownloadPdfAdmin) {
 
                 const pageImage = pageCanvas.toDataURL('image/png');
                 const imgProps = pdf.getImageProperties(pageImage);
-                const ratio = Math.min(
-                    (pageWidth) / imgProps.width,
-                    (pageHeight - bottomMarginMm) / imgProps.height
-                );
+                const ratio = Math.min(pageWidth / imgProps.width, pageHeight / imgProps.height);
                 const imgWidth = imgProps.width * ratio;
                 const imgHeight = imgProps.height * ratio;
-                const x = 0;
-                const y = pageHeight - imgHeight - bottomMarginMm;
 
-                pdf.addImage(pageImage, 'PNG', x, y, imgWidth, imgHeight, undefined, 'FAST');
+                pdf.addImage(pageImage, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
             }
 
             pdf.save(filename);
