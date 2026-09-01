@@ -165,4 +165,5 @@ test('pdf export wrapper stays visible so captured content is not blank', () => 
   assert.equal(result.exportNode.style.visibility, 'visible');
   assert.equal(result.exportNode.style.display, 'block');
   assert.ok(result.exportNode.innerHTML.length > 0);
+  assert.ok(adminJs.includes("contentRoot.style.paddingTop = '0'"));
 });

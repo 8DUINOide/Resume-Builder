@@ -423,6 +423,7 @@ function preparePdfExportForPagination(pdfExport, firstPageMetrics, secondPageMe
     contentRoot.style.height = 'auto';
     contentRoot.style.minHeight = '0';
     contentRoot.style.overflow = 'visible';
+    contentRoot.style.paddingTop = '0';
     contentRoot.style.paddingLeft = '0';
     contentRoot.style.paddingRight = '0';
 
