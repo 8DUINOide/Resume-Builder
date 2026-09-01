@@ -802,7 +802,7 @@ input, textarea, select { font-family: inherit; }
   top: 0;
   left: 0;
   width: 794px;
-  height: 1123px;
+  min-height: 1123px;
   overflow: visible;
   transform-origin: top left;
 }

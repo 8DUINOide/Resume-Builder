@@ -381,6 +381,7 @@ function buildPdfExportNode(order) {
     `;
     exportNode.style.width = '794px';
     exportNode.style.minHeight = '1123px';
+    exportNode.style.height = 'auto';
     exportNode.style.background = '#ffffff';
     exportNode.style.boxSizing = 'border-box';
     exportNode.style.margin = '0';
@@ -420,6 +421,7 @@ if (btnDownloadPdfAdmin) {
         btnDownloadPdfAdmin.disabled = true;
 
         try {
+            const fullHeight = Math.max(1123, pdfExport.exportNode.scrollHeight + 80);
             const canvas = await html2canvas(pdfExport.exportNode, {
                 scale: 2,
                 useCORS: true,
@@ -427,9 +429,9 @@ if (btnDownloadPdfAdmin) {
                 scrollX: 0,
                 scrollY: 0,
                 width: 794,
-                height: Math.max(1123, pdfExport.exportNode.scrollHeight + 40),
+                height: fullHeight,
                 windowWidth: 794,
-                windowHeight: Math.max(1123, pdfExport.exportNode.scrollHeight + 40)
+                windowHeight: fullHeight
             });
 
             const { jsPDF } = window.jspdf || {};
