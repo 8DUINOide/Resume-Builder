@@ -421,68 +421,29 @@ if (btnDownloadPdfAdmin) {
         btnDownloadPdfAdmin.disabled = true;
 
         try {
-            const fullHeight = Math.max(842, pdfExport.exportNode.scrollHeight + 40);
-            const canvas = await html2canvas(pdfExport.exportNode, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: '#ffffff',
-                scrollX: 0,
-                scrollY: 0,
-                width: 595,
-                height: fullHeight,
-                windowWidth: 595,
-                windowHeight: fullHeight
-            });
+            const opt = {
+                margin: [8, 8, 8, 8],
+                filename,
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    scrollX: 0,
+                    scrollY: 0,
+                    width: 794,
+                    windowWidth: 794,
+                    logging: false
+                },
+                jsPDF: {
+                    unit: 'mm',
+                    format: 'a4',
+                    orientation: 'portrait'
+                },
+                pagebreak: { mode: ['avoid-all', 'css-avoid'] }
+            };
 
-            const { jsPDF } = window.jspdf || {};
-            if (!jsPDF) {
-                throw new Error('jsPDF is not available.');
-            }
-
-            const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            const marginMm = 8;
-            const pagePxHeight = 842 * 2;
-            const totalPages = Math.max(1, Math.ceil(canvas.height / pagePxHeight));
-
-            for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
-                if (pageIndex > 0) {
-                    pdf.addPage();
-                }
-
-                const cropHeight = Math.min(pagePxHeight, canvas.height - (pageIndex * pagePxHeight));
-                const pageCanvas = document.createElement('canvas');
-                pageCanvas.width = canvas.width;
-                pageCanvas.height = cropHeight;
-                const ctx = pageCanvas.getContext('2d');
-                ctx.drawImage(
-                    canvas,
-                    0,
-                    pageIndex * pagePxHeight,
-                    canvas.width,
-                    cropHeight,
-                    0,
-                    0,
-                    canvas.width,
-                    cropHeight
-                );
-
-                const pageImage = pageCanvas.toDataURL('image/png');
-                const imgProps = pdf.getImageProperties(pageImage);
-                const ratio = Math.min(
-                    (pageWidth - marginMm * 2) / imgProps.width,
-                    (pageHeight - marginMm * 2) / imgProps.height
-                );
-                const imgWidth = imgProps.width * ratio;
-                const imgHeight = imgProps.height * ratio;
-                const x = (pageWidth - imgWidth) / 2;
-                const y = (pageHeight - imgHeight) / 2;
-
-                pdf.addImage(pageImage, 'PNG', x, y, imgWidth, imgHeight, undefined, 'FAST');
-            }
-
-            pdf.save(filename);
+            await html2pdf().set(opt).from(pdfExport.exportNode).save();
         } catch (err) {
             console.error('PDF generation error:', err);
             alert('Failed to generate PDF.');
