@@ -1,5 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
 
 const { extractGeminiText, parseGeminiJsonResponse } = require('../api/gemini.js');
 const { clampResumePageCount } = require('../static/js/resumePageUtils.js');
@@ -36,4 +39,110 @@ test('resume page count stays within 1 to 2 pages', () => {
   assert.equal(clampResumePageCount(1.2), 2);
   assert.equal(clampResumePageCount(3.2), 2);
   assert.equal(clampResumePageCount(0), 1);
+});
+
+test('pdf export wrapper stays visible so captured content is not blank', () => {
+  const adminJs = fs.readFileSync(path.join(__dirname, '../static/js/admin.js'), 'utf8');
+  const templatesJs = fs.readFileSync(path.join(__dirname, '../static/js/templates.js'), 'utf8');
+
+  const body = {
+    children: [],
+    appendChild(node) { this.children.push(node); return node; }
+  };
+
+  const createElement = () => ({
+    style: {},
+    innerHTML: '',
+    appendChild(node) { this.child = node; return node; },
+    remove() {},
+    classList: { add() {}, remove() {}, toggle() {} },
+    addEventListener() {}
+  });
+
+  const makeDomElement = (id = '') => ({
+    id,
+    style: {},
+    classList: { add() {}, remove() {}, toggle() {} },
+    innerHTML: '',
+    textContent: '',
+    value: '',
+    disabled: false,
+    appendChild(node) { this.child = node; return node; },
+    addEventListener() {},
+    remove() {},
+    click() {}
+  });
+
+  const context = {
+    document: {
+      body,
+      createElement,
+      getElementById(id) { return makeDomElement(id); },
+      querySelectorAll() { return []; },
+      querySelector() { return null; }
+    },
+    firebase: {
+      apps: [],
+      initializeApp() {},
+      auth() {
+        return {
+          onAuthStateChanged() {},
+          signInWithPopup() { return Promise.resolve(); },
+          signOut() { return Promise.resolve(); }
+        };
+      },
+      firestore() {
+        return {
+          collection() {
+            return {
+              doc() {
+                return {
+                  get: async () => ({ exists: false, data: () => ({}) }),
+                  set: async () => {},
+                  update: async () => {},
+                  delete: async () => {}
+                };
+              },
+              orderBy() {
+                return { onSnapshot() { return () => {}; } };
+              }
+            };
+          }
+        };
+      }
+    },
+    ResumeTemplates: {
+      render() {
+        return '<div style="width:794px;min-height:1123px;">Resume content</div>';
+      }
+    },
+    console,
+    requestAnimationFrame(fn) { fn(); return 1; }
+  };
+
+  vm.runInNewContext(templatesJs, context);
+  vm.runInNewContext(adminJs, context);
+
+  const buildPdfExportNode = context.buildPdfExportNode;
+  assert.ok(typeof buildPdfExportNode === 'function');
+
+  const result = buildPdfExportNode({
+    refId: 'REF-1234',
+    templateType: 'ats_classic',
+    resumeData: {
+      personalInfo: { fullName: 'Jane Doe' },
+      summary: 'Example summary',
+      experience: [],
+      education: [],
+      skills: [],
+      projects: []
+    }
+  });
+
+  assert.ok(result);
+  assert.equal(result.wrapper.style.left, '0');
+  assert.equal(result.wrapper.style.visibility, 'visible');
+  assert.equal(result.exportNode.style.visibility, 'visible');
+  assert.equal(result.exportNode.style.display, 'block');
+  assert.ok(result.exportNode.innerHTML.length > 0);
 });

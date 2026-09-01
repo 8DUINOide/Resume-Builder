@@ -382,6 +382,7 @@ function buildPdfExportNode(order) {
     exportNode.style.width = '794px';
     exportNode.style.minHeight = '1123px';
     exportNode.style.height = 'auto';
+    exportNode.style.display = 'block';
     exportNode.style.background = '#ffffff';
     exportNode.style.boxSizing = 'border-box';
     exportNode.style.margin = '0';
@@ -389,14 +390,21 @@ function buildPdfExportNode(order) {
     exportNode.style.position = 'relative';
     exportNode.style.overflow = 'visible';
     exportNode.style.fontFamily = 'Inter, Arial, sans-serif';
+    exportNode.style.opacity = '1';
+    exportNode.style.visibility = 'visible';
 
     const wrapper = document.createElement('div');
     wrapper.style.position = 'fixed';
-    wrapper.style.left = '-9999px';
+    wrapper.style.left = '0';
     wrapper.style.top = '0';
     wrapper.style.width = '794px';
+    wrapper.style.height = 'auto';
     wrapper.style.background = '#ffffff';
     wrapper.style.zIndex = '2147483647';
+    wrapper.style.opacity = '1';
+    wrapper.style.visibility = 'visible';
+    wrapper.style.pointerEvents = 'none';
+    wrapper.style.overflow = 'visible';
     wrapper.appendChild(exportNode);
     document.body.appendChild(wrapper);
 
@@ -955,67 +963,70 @@ btnSaveEdit.addEventListener('click', async () => {
 // ===========================================
 //  PRINTING
 // ===========================================
-btnPrint.addEventListener('click', () => {
-    if (!selectedOrder || !selectedOrder.resumeData) return;
+const btnPrint = document.getElementById('btn-print-resume');
+if (btnPrint) {
+    btnPrint.addEventListener('click', () => {
+        if (!selectedOrder || !selectedOrder.resumeData) return;
 
-    const printWindow = window.open('', '_blank');
+        const printWindow = window.open('', '_blank');
 
-    if (!printWindow) {
-        alert("Please allow popups to print.");
-        return;
-    }
+        if (!printWindow) {
+            alert("Please allow popups to print.");
+            return;
+        }
 
-    const renderData = {
-        ...selectedOrder.resumeData,
-        colorTheme: selectedOrder.colorTheme || selectedOrder.resumeData.colorTheme || 'indigo',
-        photoSize: selectedOrder.photoSize || selectedOrder.resumeData.photoSize || 100,
-        photoShape: selectedOrder.photoShape || selectedOrder.resumeData.photoShape || 'circle'
-    };
-    const resumeHtml = ResumeTemplates.render(selectedOrder.templateType || 'ats_classic', renderData);
+        const renderData = {
+            ...selectedOrder.resumeData,
+            colorTheme: selectedOrder.colorTheme || selectedOrder.resumeData.colorTheme || 'indigo',
+            photoSize: selectedOrder.photoSize || selectedOrder.resumeData.photoSize || 100,
+            photoShape: selectedOrder.photoShape || selectedOrder.resumeData.photoShape || 'circle'
+        };
+        const resumeHtml = ResumeTemplates.render(selectedOrder.templateType || 'ats_classic', renderData);
 
-    printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Print Order #${selectedOrder.refId}</title>
-            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-            <style>
-                @page { margin: 25.4mm 0; size: A4; }
-                body { margin: 0; padding: 0; background: #fff; display: flex; justify-content: center; }
-                .resume-container {
-                    width: 794px;
-                    min-height: 1123px;
-                    box-sizing: border-box;
-                    page-break-inside: avoid;
-                    break-inside: avoid;
-                }
-                .resume-container * {
-                    page-break-inside: avoid !important;
-                    break-inside: avoid !important;
-                }
-                /* Hide everything except the resume container when printing */
-                @media print {
-                    body { display: block; margin: 0; }
-                    .resume-container { position: absolute; top: 25.4mm; left: 0; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="resume-container">
-                ${resumeHtml}
-            </div>
-            <script>
-                // Wait a moment for fonts/images to load, then print
-                setTimeout(() => {
-                    window.print();
-                }, 1000);
-            </script>
-        </body>
-        </html>
-    `);
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Print Order #${selectedOrder.refId}</title>
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+                <style>
+                    @page { margin: 25.4mm 0; size: A4; }
+                    body { margin: 0; padding: 0; background: #fff; display: flex; justify-content: center; }
+                    .resume-container {
+                        width: 794px;
+                        min-height: 1123px;
+                        box-sizing: border-box;
+                        page-break-inside: avoid;
+                        break-inside: avoid;
+                    }
+                    .resume-container * {
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
+                    }
+                    /* Hide everything except the resume container when printing */
+                    @media print {
+                        body { display: block; margin: 0; }
+                        .resume-container { position: absolute; top: 25.4mm; left: 0; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="resume-container">
+                    ${resumeHtml}
+                </div>
+                <script>
+                    // Wait a moment for fonts/images to load, then print
+                    setTimeout(() => {
+                        window.print();
+                    }, 1000);
+                </script>
+            </body>
+            </html>
+        `);
 
-    printWindow.document.close();
-});
+        printWindow.document.close();
+    });
+}
 // ===========================================
 //  AI SCAN FUNCTIONALITY (ADMIN)
 // ===========================================
