@@ -454,7 +454,6 @@ if (btnDownloadPdfAdmin) {
             const totalPages = Math.max(1, Math.ceil(canvas.height / pagePxHeight));
             const xOffset = 0;
             const yOffset = 0;
-            const bottomMargin = 12.7; // 0.5 inch in mm
 
             for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
                 if (pageIndex > 0) {
@@ -480,11 +479,8 @@ if (btnDownloadPdfAdmin) {
 
                 const pageImage = pageCanvas.toDataURL('image/png');
                 const imgProps = pdf.getImageProperties(pageImage);
-                // Scale image to fit page width while maintaining aspect ratio
-                // Ensure content leaves 0.5 inch margin at bottom
-                const maxWidth = pageWidth;
-                const maxHeight = pageHeight - bottomMargin;
-                const ratio = Math.min(maxWidth / imgProps.width, maxHeight / imgProps.height);
+                // Scale image to fit full page width while maintaining aspect ratio
+                const ratio = pageWidth / imgProps.width;
                 const imgWidth = imgProps.width * ratio;
                 const imgHeight = imgProps.height * ratio;
 
