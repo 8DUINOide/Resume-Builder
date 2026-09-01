@@ -5,7 +5,11 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const { extractGeminiText, parseGeminiJsonResponse } = require('../api/gemini.js');
-const { clampResumePageCount } = require('../static/js/resumePageUtils.js');
+const {
+  clampResumePageCount,
+  getA4PdfPageMetrics,
+  getPdfCanvasPageSliceHeight
+} = require('../static/js/resumePageUtils.js');
 
 test('extractGeminiText reads text from Gemini response parts', () => {
   const response = {
@@ -39,6 +43,16 @@ test('resume page count stays within 1 to 2 pages', () => {
   assert.equal(clampResumePageCount(1.2), 2);
   assert.equal(clampResumePageCount(3.2), 2);
   assert.equal(clampResumePageCount(0), 1);
+});
+
+test('PDF slices fill A4 while reserving only a 0.5-inch bottom margin', () => {
+  const metrics = getA4PdfPageMetrics();
+  const sliceHeight = getPdfCanvasPageSliceHeight(1588);
+
+  assert.equal(metrics.bottomMarginMm, 12.7);
+  assert.ok(Math.abs(metrics.cssPageHeightPx - 1123) < 1);
+  assert.ok(Math.abs(metrics.cssPrintableHeightPx - 1075) < 1);
+  assert.equal(sliceHeight, Math.round(metrics.cssPrintableHeightPx * 2));
 });
 
 test('pdf export wrapper stays visible so captured content is not blank', () => {

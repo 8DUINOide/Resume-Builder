@@ -377,10 +377,10 @@ function buildPdfExportNode(order) {
             }
             .resume-page-break { page-break-before: always; }
         </style>
-        ${resumeHtml}
+        <div class="resume-export-content">${resumeHtml}</div>
     `;
     exportNode.style.width = '794px';
-    exportNode.style.minHeight = '1123px';
+    exportNode.style.minHeight = '0';
     exportNode.style.height = 'auto';
     exportNode.style.display = 'block';
     exportNode.style.background = '#ffffff';
@@ -411,6 +411,37 @@ function buildPdfExportNode(order) {
     return { wrapper, exportNode };
 }
 
+function preparePdfExportForPagination(pdfExport, pageMetrics) {
+    const contentRoot = pdfExport.exportNode.querySelector('.resume-export-content > div');
+
+    if (!contentRoot) {
+        return Math.ceil(Math.max(pageMetrics.cssPrintableHeightPx, pdfExport.exportNode.scrollHeight));
+    }
+
+    // Templates use a minimum A4 height for the on-screen preview. Let the
+    // export use its natural height so a short resume remains a single page.
+    contentRoot.style.height = 'auto';
+    contentRoot.style.minHeight = '0';
+    contentRoot.style.overflow = 'visible';
+
+    let contentHeight = Math.max(contentRoot.scrollHeight, contentRoot.offsetHeight);
+    const maximumContentHeight = pageMetrics.cssPrintableHeightPx * 2;
+
+    // Keep all content in two pages when a resume is long. Expanding the
+    // layout before scaling preserves the full page width and avoids clipping.
+    if (contentHeight > maximumContentHeight) {
+        const scale = maximumContentHeight / contentHeight;
+        contentRoot.style.width = `${pageMetrics.contentWidthPx / scale}px`;
+        contentRoot.style.transform = `scale(${scale})`;
+        contentRoot.style.transformOrigin = 'top left';
+        contentHeight = Math.ceil(Math.max(contentRoot.scrollHeight, contentRoot.offsetHeight) * scale);
+    }
+
+    const exportHeight = Math.ceil(Math.max(pageMetrics.cssPrintableHeightPx, contentHeight));
+    pdfExport.exportNode.style.height = `${exportHeight}px`;
+    return exportHeight;
+}
+
 if (btnDownloadPdfAdmin) {
     btnDownloadPdfAdmin.addEventListener('click', async () => {
         if (!selectedOrder) return;
@@ -429,7 +460,21 @@ if (btnDownloadPdfAdmin) {
         btnDownloadPdfAdmin.disabled = true;
 
         try {
-            const fullHeight = Math.max(1123, pdfExport.exportNode.scrollHeight + 40);
+            const { jsPDF } = window.jspdf || {};
+            if (!jsPDF) {
+                throw new Error('jsPDF is not available.');
+            }
+
+            const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const pageMetrics = getA4PdfPageMetrics({
+                contentWidthPx: 794,
+                pageWidthMm: pageWidth,
+                pageHeightMm: pageHeight,
+                bottomMarginMm: 12.7
+            });
+            const fullHeight = preparePdfExportForPagination(pdfExport, pageMetrics);
             const canvas = await html2canvas(pdfExport.exportNode, {
                 scale: 2,
                 useCORS: true,
@@ -442,25 +487,20 @@ if (btnDownloadPdfAdmin) {
                 windowHeight: fullHeight
             });
 
-            const { jsPDF } = window.jspdf || {};
-            if (!jsPDF) {
-                throw new Error('jsPDF is not available.');
+            // html2canvas renders at 2x resolution. Slice by the matching
+            // raster height so each image fills the printable A4 area.
+            const pageCanvasHeight = getPdfCanvasPageSliceHeight(canvas.width, pageMetrics);
+            const totalPages = Math.max(1, Math.ceil(canvas.height / pageCanvasHeight));
+            if (totalPages > 2) {
+                throw new Error('The resume could not be fitted within two pages.');
             }
-
-            const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            const pagePxHeight = 1123;
-            const totalPages = Math.max(1, Math.ceil(canvas.height / pagePxHeight));
-            const xOffset = 0;
-            const yOffset = 0;
 
             for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
                 if (pageIndex > 0) {
                     pdf.addPage();
                 }
 
-                const cropHeight = Math.min(pagePxHeight, canvas.height - (pageIndex * pagePxHeight));
+                const cropHeight = Math.min(pageCanvasHeight, canvas.height - (pageIndex * pageCanvasHeight));
                 const pageCanvas = document.createElement('canvas');
                 pageCanvas.width = canvas.width;
                 pageCanvas.height = cropHeight;
@@ -468,7 +508,7 @@ if (btnDownloadPdfAdmin) {
                 ctx.drawImage(
                     canvas,
                     0,
-                    pageIndex * pagePxHeight,
+                    pageIndex * pageCanvasHeight,
                     canvas.width,
                     cropHeight,
                     0,
@@ -479,12 +519,13 @@ if (btnDownloadPdfAdmin) {
 
                 const pageImage = pageCanvas.toDataURL('image/png');
                 const imgProps = pdf.getImageProperties(pageImage);
-                // Scale image to fit full page width while maintaining aspect ratio
+                // Full-bleed top/side alignment; reserve only the 0.5-inch
+                // bottom margin by limiting each source slice above.
                 const ratio = pageWidth / imgProps.width;
                 const imgWidth = imgProps.width * ratio;
                 const imgHeight = imgProps.height * ratio;
 
-                pdf.addImage(pageImage, 'PNG', xOffset, yOffset, imgWidth, imgHeight, undefined, 'FAST');
+                pdf.addImage(pageImage, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
             }
 
             pdf.save(filename);
