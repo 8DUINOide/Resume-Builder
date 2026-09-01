@@ -476,7 +476,7 @@ if (btnDownloadPdfAdmin) {
                 );
                 const imgWidth = imgProps.width * ratio;
                 const imgHeight = imgProps.height * ratio;
-                const x = (pageWidth - imgWidth) / 2;
+                const x = 0;
                 const y = pageHeight - imgHeight - bottomMarginMm;
 
                 pdf.addImage(pageImage, 'PNG', x, y, imgWidth, imgHeight, undefined, 'FAST');
