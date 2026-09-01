@@ -25,10 +25,24 @@ const ResumeTemplates = {
 
   // ---------- Photo Helper ----------
   _photoStyle(data, defaults = {}) {
-    const size = data.photoSize || defaults.size || 90;
+    const requestedSize = Number(data.photoSize);
+    const defaultSize = defaults.size || 90;
+    const size = Number.isFinite(requestedSize) && requestedSize > 0
+      ? Math.max(50, Math.min(200, requestedSize))
+      : defaultSize;
     const shape = data.photoShape || 'circle';
     const borderRadius = shape === 'circle' ? '50%' : '8px';
     return { size, borderRadius };
+  },
+
+  _photoHtml(photoUrl, photoStyle, options = {}) {
+    if (!photoUrl) return '';
+
+    const border = options.border || 'none';
+    const margin = options.margin || '0';
+    return `<div style="width:${photoStyle.size}px;height:${photoStyle.size}px;box-sizing:border-box;flex:0 0 ${photoStyle.size}px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:${border};border-radius:${photoStyle.borderRadius};margin:${margin};">
+      <img src="${this._escapeHtml(photoUrl)}" style="display:block;width:100%;height:100%;object-fit:cover;object-position:center center;">
+    </div>`;
   },
 
   // ---------- Escape Helpers ----------
@@ -133,7 +147,10 @@ const ResumeTemplates = {
     const p = data.personalInfo || {};
     const t = this._getTheme(data);
     const ps = this._photoStyle(data, { size: 90 });
-    const photoHtml = p.photoUrl ? `<img src="${p.photoUrl}" style="width:${ps.size}px;height:${ps.size}px;border-radius:${ps.borderRadius};object-fit:cover;border:3px solid rgba(255,255,255,0.3);margin-bottom:16px;">` : '';
+    const photoHtml = this._photoHtml(p.photoUrl, ps, {
+      border: '3px solid rgba(255,255,255,0.3)',
+      margin: '0 auto 16px'
+    });
 
     return `
     <div style="${this._pageFrame("display:flex;font-family:'Inter',Arial,sans-serif;color:#1a1a1a;line-height:1.5;")}">
@@ -218,7 +235,9 @@ const ResumeTemplates = {
     const t = this._getTheme(data);
     const ps = this._photoStyle(data, { size: 80 });
     const contactParts = [p.email, p.phone, p.location].filter(Boolean);
-    const photoHtml = p.photoUrl ? `<img src="${p.photoUrl}" style="width:${ps.size}px;height:${ps.size}px;border-radius:${ps.borderRadius};object-fit:cover;border:3px solid rgba(255,255,255,0.4);">` : '';
+    const photoHtml = this._photoHtml(p.photoUrl, ps, {
+      border: '3px solid rgba(255,255,255,0.4)'
+    });
 
     return `
     <div style="${this._pageFrame("height:1123px;min-height:1123px;overflow:hidden;font-family:'Inter',Arial,sans-serif;color:#1a1a1a;line-height:1.5;")}">
@@ -380,7 +399,9 @@ const ResumeTemplates = {
     // Executive uses a gold accent by default but adapts to theme
     const headerBg = t.primary === '#1E293B' ? '#0F172A' : t.primary;
     const accentLine = t.primary === '#92400E' ? 'linear-gradient(90deg,#D4AF37,#F4D03F,#D4AF37)' : `linear-gradient(90deg,${t.gradientFrom},${t.gradientTo},${t.gradientFrom})`;
-    const photoHtml = p.photoUrl ? `<img src="${p.photoUrl}" style="width:${ps.size}px;height:${ps.size}px;border-radius:${ps.borderRadius};object-fit:cover;border:3px solid rgba(255,255,255,0.3);">` : '';
+    const photoHtml = this._photoHtml(p.photoUrl, ps, {
+      border: '3px solid rgba(255,255,255,0.3)'
+    });
 
     return `
     <div style="${this._pageFrame("height:1123px;min-height:1123px;overflow:hidden;font-family:'Inter',Arial,sans-serif;color:#1a1a1a;line-height:1.5;")}">

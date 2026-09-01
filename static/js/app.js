@@ -336,7 +336,7 @@ function addSkillEntry(data = {}) {
     div.style.padding = '12px 16px';
     div.innerHTML = `
         <div style="display:flex;align-items:center;gap:12px;">
-            <input type="text" class="form-input skill-name" value="${escAttr(data.name)}" placeholder="e.g. JavaScript, Python, Photoshop" style="flex:1;">
+            <input type="text" class="form-input skill-name" value="${escAttr(data.name)}" placeholder="e.g. Communication, Customer Service, Graphic Design" style="flex:1;">
             <button type="button" class="btn-remove-entry" style="position:static;width:28px;height:28px;" onclick="this.closest('.entry-card').remove(); debounceSave();"><i class="fa-solid fa-xmark"></i></button>
         </div>
     `;

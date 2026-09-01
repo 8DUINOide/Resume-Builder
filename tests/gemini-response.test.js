@@ -204,3 +204,26 @@ test('print preview clips content to the same printable area used by the PDF', (
   assert.ok(pageUtilsJs.includes('pageContent.style.top = `${-sourceStartPx}px`'));
   assert.ok(pageUtilsJs.includes('createPage(firstPageMetrics.cssPrintableHeightPx, secondPageMetrics)'));
 });
+
+test('skill guidance is profession-neutral and profile photos stay centered at every size', () => {
+  const appJs = fs.readFileSync(path.join(__dirname, '../static/js/app.js'), 'utf8');
+  const templatesJs = fs.readFileSync(path.join(__dirname, '../static/js/templates.js'), 'utf8');
+  const templates = vm.runInNewContext(`${templatesJs}\nResumeTemplates`, {});
+
+  assert.ok(appJs.includes('e.g. Communication, Customer Service, Graphic Design'));
+  assert.ok(templatesJs.includes('object-position:center center'));
+  assert.ok(templatesJs.includes('justify-content:center'));
+  assert.ok(templatesJs.includes("margin: '0 auto 16px'"));
+  assert.ok(templatesJs.includes('Math.max(50, Math.min(200, requestedSize))'));
+
+  for (const templateKey of ['canva_modern_1', 'canva_creative_2', 'canva_executive_4']) {
+    for (const photoSize of [50, 100, 200]) {
+      const html = templates.render(templateKey, {
+        personalInfo: { photoUrl: 'data:image/png;base64,abc' },
+        photoSize
+      });
+      assert.ok(html.includes(`flex:0 0 ${photoSize}px`));
+      assert.ok(html.includes('object-position:center center'));
+    }
+  }
+});
