@@ -7,19 +7,24 @@ function getA4PdfPageMetrics({
   contentWidthPx = 794,
   pageWidthMm = 210,
   pageHeightMm = 297,
+  topMarginMm = 0,
   bottomMarginMm = 12.7
 } = {}) {
   const cssPageHeightPx = contentWidthPx * (pageHeightMm / pageWidthMm);
+  const cssTopMarginPx = contentWidthPx * (topMarginMm / pageWidthMm);
   const cssBottomMarginPx = contentWidthPx * (bottomMarginMm / pageWidthMm);
 
   return {
     contentWidthPx,
     pageWidthMm,
     pageHeightMm,
+    topMarginMm,
     bottomMarginMm,
     cssPageHeightPx,
-    cssPrintableHeightPx: cssPageHeightPx - cssBottomMarginPx,
-    pdfPrintableHeightMm: pageHeightMm - bottomMarginMm
+    cssTopMarginPx,
+    cssBottomMarginPx,
+    cssPrintableHeightPx: cssPageHeightPx - cssTopMarginPx - cssBottomMarginPx,
+    pdfPrintableHeightMm: pageHeightMm - topMarginMm - bottomMarginMm
   };
 }
 

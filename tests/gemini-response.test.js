@@ -45,14 +45,20 @@ test('resume page count stays within 1 to 2 pages', () => {
   assert.equal(clampResumePageCount(0), 1);
 });
 
-test('PDF slices fill A4 while reserving only a 0.5-inch bottom margin', () => {
+test('PDF slices use no side margins and reserve a 0.5-inch second-page top margin', () => {
   const metrics = getA4PdfPageMetrics();
+  const secondPageMetrics = getA4PdfPageMetrics({ topMarginMm: 12.7 });
   const sliceHeight = getPdfCanvasPageSliceHeight(1588);
+  const secondPageSliceHeight = getPdfCanvasPageSliceHeight(1588, { topMarginMm: 12.7 });
 
   assert.equal(metrics.bottomMarginMm, 12.7);
+  assert.equal(metrics.topMarginMm, 0);
+  assert.equal(secondPageMetrics.topMarginMm, 12.7);
   assert.ok(Math.abs(metrics.cssPageHeightPx - 1123) < 1);
   assert.ok(Math.abs(metrics.cssPrintableHeightPx - 1075) < 1);
   assert.equal(sliceHeight, Math.round(metrics.cssPrintableHeightPx * 2));
+  assert.equal(secondPageSliceHeight, Math.round(secondPageMetrics.cssPrintableHeightPx * 2));
+  assert.ok(secondPageSliceHeight < sliceHeight);
 });
 
 test('pdf export wrapper stays visible so captured content is not blank', () => {
