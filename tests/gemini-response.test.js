@@ -195,3 +195,12 @@ test('customer preview uses the same paginated print renderer as admin', () => {
   assert.ok(adminJs.includes('renderResumePrintPreview(adminPreviewInner, html)'));
   assert.ok(appJs.includes("container.style.overflow = 'visible'"));
 });
+
+test('print preview clips content to the same printable area used by the PDF', () => {
+  const pageUtilsJs = fs.readFileSync(path.join(__dirname, '../static/js/resumePageUtils.js'), 'utf8');
+
+  assert.ok(pageUtilsJs.includes("printableArea.style.height = `${pageMetrics.cssPrintableHeightPx}px`"));
+  assert.ok(pageUtilsJs.includes('printableArea.style.overflow = \'hidden\''));
+  assert.ok(pageUtilsJs.includes('pageContent.style.top = `${-sourceStartPx}px`'));
+  assert.ok(pageUtilsJs.includes('createPage(firstPageMetrics.cssPrintableHeightPx, secondPageMetrics)'));
+});

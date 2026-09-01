@@ -78,7 +78,7 @@ function renderResumePrintPreview(target, resumeHtml, options = {}) {
   target.innerHTML = resumeHtml;
   const contentRoot = target.firstElementChild;
   const layout = prepareResumeForPrintLayout(contentRoot, firstPageMetrics, secondPageMetrics);
-  const createPage = (sourceTopPx, pageMetrics) => {
+  const createPage = (sourceStartPx, pageMetrics) => {
     const page = document.createElement('div');
     page.className = 'print-preview-page';
     page.style.width = `${pageMetrics.contentWidthPx}px`;
@@ -88,11 +88,25 @@ function renderResumePrintPreview(target, resumeHtml, options = {}) {
     page.style.background = '#ffffff';
     page.style.flex = '0 0 auto';
 
+    // Keep each page's reserved margins empty. The viewport is the same
+    // printable area used by the PDF crop, preventing overlap at page breaks.
+    const printableArea = document.createElement('div');
+    printableArea.style.position = 'absolute';
+    printableArea.style.top = `${pageMetrics.cssTopMarginPx}px`;
+    printableArea.style.left = '0';
+    printableArea.style.width = `${pageMetrics.contentWidthPx}px`;
+    printableArea.style.height = `${pageMetrics.cssPrintableHeightPx}px`;
+    printableArea.style.overflow = 'hidden';
+
     const pageContent = contentRoot.cloneNode(true);
     pageContent.style.position = 'absolute';
     pageContent.style.left = '0';
-    pageContent.style.top = `${sourceTopPx}px`;
-    page.appendChild(pageContent);
+    // The printable viewport already starts below the page's top margin.
+    // Offset only by the source slice so that page two has exactly one
+    // half-inch top margin rather than applying it twice.
+    pageContent.style.top = `${-sourceStartPx}px`;
+    printableArea.appendChild(pageContent);
+    page.appendChild(printableArea);
     return page;
   };
 
@@ -105,8 +119,7 @@ function renderResumePrintPreview(target, resumeHtml, options = {}) {
   target.appendChild(createPage(0, firstPageMetrics));
 
   if (layout.pageCount === 2) {
-    const secondPageSourceTop = secondPageMetrics.cssTopMarginPx - firstPageMetrics.cssPrintableHeightPx;
-    target.appendChild(createPage(secondPageSourceTop, secondPageMetrics));
+    target.appendChild(createPage(firstPageMetrics.cssPrintableHeightPx, secondPageMetrics));
   }
 
   return {
