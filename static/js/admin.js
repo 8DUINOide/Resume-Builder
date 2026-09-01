@@ -1074,8 +1074,15 @@ function resetAdminAiScanState() {
 }
 
 function handleAdminAiScanFile(file) {
+    if (!file || !file.type.startsWith('image/')) {
+        adminAiScanError.textContent = 'Please choose a JPG or PNG image of the resume.';
+        adminAiScanError.classList.remove('hidden');
+        return;
+    }
+
     if (file.size > 10 * 1024 * 1024) {
-        alert('File must be under 10 MB.');
+        adminAiScanError.textContent = 'File must be under 10 MB.';
+        adminAiScanError.classList.remove('hidden');
         return;
     }
     const reader = new FileReader();
@@ -1093,6 +1100,85 @@ function handleAdminAiScanFile(file) {
     reader.readAsDataURL(file);
 }
 
+function setAdminScannedValue(id, value) {
+    const field = document.getElementById(id);
+    if (field) field.value = value == null ? '' : String(value);
+}
+
+function applyAdminScannedResume(extracted) {
+    if (!extracted || typeof extracted !== 'object') {
+        throw new Error('The AI returned an invalid resume result. Please try again.');
+    }
+
+    const personalInfo = extracted.personalInfo && typeof extracted.personalInfo === 'object'
+        ? extracted.personalInfo
+        : {};
+    const personalFields = {
+        fullName: 'edit-fullName',
+        email: 'edit-email',
+        phone: 'edit-phone',
+        location: 'edit-location',
+        linkedin: 'edit-linkedin',
+        website: 'edit-website'
+    };
+
+    Object.entries(personalFields).forEach(([key, id]) => {
+        if (Object.prototype.hasOwnProperty.call(personalInfo, key)) {
+            setAdminScannedValue(id, personalInfo[key]);
+        }
+    });
+
+    if (Object.prototype.hasOwnProperty.call(extracted, 'summary')) {
+        setAdminScannedValue('edit-summary', extracted.summary);
+    }
+
+    if (Array.isArray(extracted.experience)) {
+        document.getElementById('edit-exp-list').innerHTML = '';
+        extracted.experience.filter(Boolean).forEach((exp) => {
+            const entry = typeof exp === 'object' ? exp : {};
+            adminAddExp({
+                title: entry.title || entry.role || '',
+                company: entry.company || '',
+                startDate: entry.startDate || entry.date || '',
+                endDate: entry.endDate || '',
+                description: entry.description || ''
+            });
+        });
+    }
+
+    if (Array.isArray(extracted.education)) {
+        document.getElementById('edit-edu-list').innerHTML = '';
+        extracted.education.filter(Boolean).forEach((edu) => {
+            const entry = typeof edu === 'object' ? edu : {};
+            adminAddEdu({
+                degree: entry.degree || '',
+                school: entry.school || '',
+                startDate: entry.startDate || entry.date || '',
+                endDate: entry.endDate || '',
+                gpa: entry.gpa || ''
+            });
+        });
+    }
+
+    if (Array.isArray(extracted.skills)) {
+        document.getElementById('edit-skill-list').innerHTML = '';
+        extracted.skills.filter(Boolean).forEach((skill) => {
+            adminAddSkill({ name: typeof skill === 'string' ? skill : skill.name || '' });
+        });
+    }
+
+    if (Array.isArray(extracted.projects)) {
+        document.getElementById('edit-proj-list').innerHTML = '';
+        extracted.projects.filter(Boolean).forEach((project) => {
+            const entry = typeof project === 'object' ? project : {};
+            adminAddProj({
+                name: entry.name || '',
+                description: entry.description || ''
+            });
+        });
+    }
+}
+
 if (adminAiScanDrop) {
     adminAiScanDrop.addEventListener('click', () => adminAiScanInput.click());
     adminAiScanDrop.addEventListener('dragover', (e) => {
@@ -1108,6 +1194,12 @@ if (adminAiScanDrop) {
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
             handleAdminAiScanFile(e.dataTransfer.files[0]);
         }
+    });
+}
+
+if (adminAiScanModal) {
+    adminAiScanModal.addEventListener('click', (e) => {
+        if (e.target === adminAiScanModal) adminAiScanModal.classList.add('hidden');
     });
 }
 
@@ -1145,65 +1237,7 @@ if (btnAdminStartScan) {
                 throw new Error(result.error || result.message || 'Failed to extract data');
             }
 
-            const extracted = result.data;
-            
-            // Populate admin edit form
-            if (extracted.personalInfo) {
-                if (extracted.personalInfo.fullName) document.getElementById('edit-fullName').value = extracted.personalInfo.fullName;
-                if (extracted.personalInfo.email) document.getElementById('edit-email').value = extracted.personalInfo.email;
-                if (extracted.personalInfo.phone) document.getElementById('edit-phone').value = extracted.personalInfo.phone;
-                if (extracted.personalInfo.location) document.getElementById('edit-location').value = extracted.personalInfo.location;
-                if (extracted.personalInfo.linkedin) document.getElementById('edit-linkedin').value = extracted.personalInfo.linkedin;
-                if (extracted.personalInfo.website) document.getElementById('edit-website').value = extracted.personalInfo.website;
-            }
-            if (extracted.summary) document.getElementById('edit-summary').value = extracted.summary;
-
-            // Clear and replace experience
-            if (extracted.experience && extracted.experience.length > 0) {
-                document.getElementById('edit-exp-list').innerHTML = '';
-                extracted.experience.forEach(exp => {
-                    adminAddExp({
-                        title: exp.title || exp.role || '',
-                        company: exp.company || '',
-                        startDate: exp.startDate || exp.date || '',
-                        endDate: exp.endDate || '',
-                        description: exp.description || ''
-                    });
-                });
-            }
-
-            // Clear and replace education
-            if (extracted.education && extracted.education.length > 0) {
-                document.getElementById('edit-edu-list').innerHTML = '';
-                extracted.education.forEach(edu => {
-                    adminAddEdu({
-                        degree: edu.degree || '',
-                        school: edu.school || '',
-                        startDate: edu.startDate || edu.date || '',
-                        endDate: edu.endDate || '',
-                        gpa: edu.gpa || ''
-                    });
-                });
-            }
-
-            // Clear and replace skills
-            if (extracted.skills && extracted.skills.length > 0) {
-                document.getElementById('edit-skill-list').innerHTML = '';
-                extracted.skills.forEach(sk => {
-                    adminAddSkill({ name: sk.name || '' });
-                });
-            }
-
-            // Clear and replace projects
-            if (extracted.projects && extracted.projects.length > 0) {
-                document.getElementById('edit-proj-list').innerHTML = '';
-                extracted.projects.forEach(proj => {
-                    adminAddProj({
-                        name: proj.name || '',
-                        description: proj.description || ''
-                    });
-                });
-            }
+            applyAdminScannedResume(result.data);
 
             adminAiScanModal.classList.add('hidden');
             alert('Resume data extracted and form populated!');
@@ -1212,6 +1246,8 @@ if (btnAdminStartScan) {
             console.error('AI scan error:', error);
             adminAiScanError.textContent = error.message || 'Failed to extract data.';
             adminAiScanError.classList.remove('hidden');
+        } finally {
+            adminAiScanStatus.classList.add('hidden');
             btnAdminStartScan.disabled = false;
             btnAdminStartScan.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Extract Data';
         }
