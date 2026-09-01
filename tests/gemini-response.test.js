@@ -256,6 +256,70 @@ test('customer total counts unique normalized emails and ignores placeholder val
   assert.ok(customerEmails.includes('alfrancisbadillapaz10@gmail.com'));
 });
 
+test('sign in creates a Firestore user doc with role CUSTOMER', async () => {
+  const appJs = fs.readFileSync(path.join(__dirname, '../static/js/app.js'), 'utf8');
+  const created = [];
+  const context = {
+    document: {
+      getElementById(id) {
+        if (id === 'fullName' || id === 'email') return { value: '' };
+        return { value: '', classList: { add() {}, remove() {}, toggle() {} }, style: {}, src: '', textContent: '' };
+      },
+      querySelectorAll() { return []; },
+      querySelector() { return null; }
+    },
+    firebase: {
+      apps: [],
+      initializeApp() {},
+      firestore() {
+        return {
+          FieldValue: { serverTimestamp: () => 'ts' }
+        };
+      },
+      auth() {
+        return {
+          onAuthStateChanged() {},
+          signInWithPopup() { return Promise.resolve(); },
+          signOut() { return Promise.resolve(); }
+        };
+      }
+    },
+    db: {
+      collection(name) {
+        return {
+          doc(uid) {
+            return {
+              async get() {
+                return { exists: false, data: () => ({}) };
+              },
+              async set(payload) {
+                created.push({ name, uid, payload });
+              }
+            };
+          }
+        };
+      }
+    },
+    console,
+    requestAnimationFrame(fn) { fn(); return 1; },
+    loadDraft() {},
+    updatePreview() {}
+  };
+
+  vm.runInNewContext(`${appJs}\nthis.ensureUserProfileInFirestore = ensureUserProfileInFirestore;`, context);
+
+  await context.ensureUserProfileInFirestore({
+    uid: 'abc123',
+    email: 'new.user@gmail.com',
+    displayName: 'New User',
+    photoURL: 'https://example.com/avatar.png'
+  });
+
+  assert.equal(created.length, 1);
+  assert.equal(created[0].payload.role, 'CUSTOMER');
+  assert.equal(created[0].payload.email, 'new.user@gmail.com');
+});
+
 test('customer preview uses the same paginated print renderer as admin', () => {
   const appJs = fs.readFileSync(path.join(__dirname, '../static/js/app.js'), 'utf8');
   const adminJs = fs.readFileSync(path.join(__dirname, '../static/js/admin.js'), 'utf8');

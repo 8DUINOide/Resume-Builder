@@ -84,11 +84,46 @@ btnSignout.addEventListener('click', async () => {
     await auth.signOut();
 });
 
+async function ensureUserProfileInFirestore(user) {
+    if (!user || !db || !db.collection) return;
+
+    const userRef = db.collection('users').doc(user.uid);
+    const userDoc = await userRef.get();
+
+    if (userDoc.exists) {
+        const data = userDoc.data() || {};
+        const updates = {};
+
+        if (!data.email && user.email) updates.email = user.email.toLowerCase();
+        if (!data.displayName && user.displayName) updates.displayName = user.displayName;
+        if (!data.photoURL && user.photoURL) updates.photoURL = user.photoURL;
+
+        if (Object.keys(updates).length > 0) {
+            await userRef.set(updates, { merge: true });
+        }
+        return;
+    }
+
+    await userRef.set({
+        uid: user.uid,
+        email: (user.email || '').toLowerCase(),
+        displayName: user.displayName || '',
+        photoURL: user.photoURL || '',
+        role: 'CUSTOMER',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+}
+
 auth.onAuthStateChanged((user) => {
     if (user) {
         currentUser = user;
         loginScreen.classList.add('hidden');
         appShell.classList.remove('hidden');
+
+        ensureUserProfileInFirestore(user).catch((error) => {
+            console.error('Failed to sync user profile to Firestore:', error);
+        });
 
         // Set user info in header
         userAvatar.src = user.photoURL || '';
