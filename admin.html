@@ -92,8 +92,10 @@
             <button class="filter-btn active" data-filter="all">All Orders</button>
             <button class="filter-btn" data-filter="pending">Pending</button>
             <button class="filter-btn" data-filter="fulfilled">Fulfilled</button>
-            <button id="btn-create-resume" class="btn-action edit" style="margin-left:auto; background:#10B981; color:white;"><i class="fa-solid fa-plus"></i> Create Resume</button>
+            <button id="btn-download-template" class="btn-action edit" style="margin-left:auto; background:#3B82F6; color:white;"><i class="fa-solid fa-download"></i> Download Template</button>
+            <button id="btn-create-resume" class="btn-action edit" style="background:#10B981; color:white;"><i class="fa-solid fa-plus"></i> Create Resume</button>
         </div>
+
 
         <div class="orders-table-wrapper">
             <table class="orders-table">
@@ -337,6 +339,67 @@
                         <i class="fa-solid fa-wand-magic-sparkles"></i> Extract Data
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===========================
+         DOWNLOAD TEMPLATE PICKER MODAL
+         =========================== -->
+    <div id="template-picker-overlay" class="order-detail-overlay hidden" style="z-index: 2500;">
+        <div class="order-detail-panel" style="max-width: 700px;">
+            <div class="order-detail-header">
+                <h2><i class="fa-solid fa-download" style="margin-right:8px;"></i>Download Template</h2>
+                <button id="btn-close-template-picker" class="btn-close-detail"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="order-detail-body" style="padding:24px; background:var(--adm-bg); border-radius:8px;">
+                <p style="color:var(--adm-text-muted); font-size:14px; margin-bottom:20px;">Choose a template design and color theme to download as a blank PDF with sample data.</p>
+
+                <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:14px; margin-bottom:24px;">
+                    <div class="tpl-pick-card selected" data-tpl="ats_classic" style="border:2px solid var(--adm-primary); border-radius:12px; padding:16px; text-align:center; cursor:pointer; background:var(--adm-surface); transition:all 0.2s;">
+                        <div style="font-size:28px; margin-bottom:8px;">📄</div>
+                        <div style="font-weight:600; font-size:14px;">ATS Classic</div>
+                        <div style="font-size:11px; color:var(--adm-text-muted);">Clean, scannable</div>
+                    </div>
+                    <div class="tpl-pick-card" data-tpl="canva_modern_1" style="border:2px solid var(--adm-border); border-radius:12px; padding:16px; text-align:center; cursor:pointer; background:var(--adm-surface); transition:all 0.2s;">
+                        <div style="font-size:28px; margin-bottom:8px;">📊</div>
+                        <div style="font-weight:600; font-size:14px;">Modern Two-Column</div>
+                        <div style="font-size:11px; color:var(--adm-text-muted);">Sidebar accent</div>
+                    </div>
+                    <div class="tpl-pick-card" data-tpl="canva_creative_2" style="border:2px solid var(--adm-border); border-radius:12px; padding:16px; text-align:center; cursor:pointer; background:var(--adm-surface); transition:all 0.2s;">
+                        <div style="font-size:28px; margin-bottom:8px;">🎨</div>
+                        <div style="font-weight:600; font-size:14px;">Creative Banner</div>
+                        <div style="font-size:11px; color:var(--adm-text-muted);">Bold header</div>
+                    </div>
+                    <div class="tpl-pick-card" data-tpl="canva_minimal_3" style="border:2px solid var(--adm-border); border-radius:12px; padding:16px; text-align:center; cursor:pointer; background:var(--adm-surface); transition:all 0.2s;">
+                        <div style="font-size:28px; margin-bottom:8px;">✨</div>
+                        <div style="font-weight:600; font-size:14px;">Minimal Elegant</div>
+                        <div style="font-size:11px; color:var(--adm-text-muted);">Understated</div>
+                    </div>
+                    <div class="tpl-pick-card" data-tpl="canva_executive_4" style="border:2px solid var(--adm-border); border-radius:12px; padding:16px; text-align:center; cursor:pointer; background:var(--adm-surface); transition:all 0.2s;">
+                        <div style="font-size:28px; margin-bottom:8px;">🏢</div>
+                        <div style="font-weight:600; font-size:14px;">Executive Dark</div>
+                        <div style="font-size:11px; color:var(--adm-text-muted);">Formal dark</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:24px;">
+                    <label style="font-size:12px; font-weight:600; color:var(--adm-text-muted); display:block; margin-bottom:8px;">Color Theme</label>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button type="button" class="tpl-color-swatch selected" data-color="indigo" style="width:32px; height:32px; border-radius:50%; background:#312E81; border:3px solid var(--adm-primary); cursor:pointer; transition:all 0.2s;" title="Indigo"></button>
+                        <button type="button" class="tpl-color-swatch" data-color="blue" style="width:32px; height:32px; border-radius:50%; background:#1E40AF; border:3px solid transparent; cursor:pointer; transition:all 0.2s;" title="Blue"></button>
+                        <button type="button" class="tpl-color-swatch" data-color="emerald" style="width:32px; height:32px; border-radius:50%; background:#065F46; border:3px solid transparent; cursor:pointer; transition:all 0.2s;" title="Emerald"></button>
+                        <button type="button" class="tpl-color-swatch" data-color="rose" style="width:32px; height:32px; border-radius:50%; background:#9F1239; border:3px solid transparent; cursor:pointer; transition:all 0.2s;" title="Rose"></button>
+                        <button type="button" class="tpl-color-swatch" data-color="amber" style="width:32px; height:32px; border-radius:50%; background:#92400E; border:3px solid transparent; cursor:pointer; transition:all 0.2s;" title="Amber"></button>
+                        <button type="button" class="tpl-color-swatch" data-color="teal" style="width:32px; height:32px; border-radius:50%; background:#115E59; border:3px solid transparent; cursor:pointer; transition:all 0.2s;" title="Teal"></button>
+                        <button type="button" class="tpl-color-swatch" data-color="slate" style="width:32px; height:32px; border-radius:50%; background:#1E293B; border:3px solid transparent; cursor:pointer; transition:all 0.2s;" title="Slate"></button>
+                        <button type="button" class="tpl-color-swatch" data-color="purple" style="width:32px; height:32px; border-radius:50%; background:#7C3AED; border:3px solid transparent; cursor:pointer; transition:all 0.2s;" title="Purple"></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="order-actions" style="justify-content:flex-end;">
+                <button id="btn-do-download-template" class="btn-action fulfill" style="background:#3B82F6; border-color:#3B82F6;"><i class="fa-solid fa-download"></i> Download PDF</button>
             </div>
         </div>
     </div>

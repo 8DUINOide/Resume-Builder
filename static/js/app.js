@@ -976,6 +976,174 @@ function generateRefId() {
 // ===========================================
 //  ORDER SUBMISSION
 // ===========================================
+
+// --- PDF Export Helper (Customer) ---
+function buildCustomerPdfExportNode() {
+    const renderData = {
+        ...resumeData,
+        personalInfo: {
+            ...resumeData.personalInfo,
+            photoUrl: photoDataUrl || ''
+        },
+        colorTheme: selectedColorTheme,
+        photoSize: photoSize,
+        photoShape: photoShape
+    };
+
+    const resumeHtml = ResumeTemplates.render(selectedTemplate, renderData);
+    if (!resumeHtml || !resumeHtml.trim()) return null;
+
+    const exportNode = document.createElement('div');
+    exportNode.innerHTML = `
+        <style>
+            * { box-sizing: border-box; }
+            body, html { margin: 0; }
+            div, h1, h2, h3, p, ul, li, section, article {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            .resume-page-break { page-break-before: always; }
+        </style>
+        <div class="resume-export-content">${resumeHtml}</div>
+    `;
+    exportNode.style.width = '794px';
+    exportNode.style.minHeight = '0';
+    exportNode.style.height = 'auto';
+    exportNode.style.display = 'block';
+    exportNode.style.background = '#ffffff';
+    exportNode.style.boxSizing = 'border-box';
+    exportNode.style.margin = '0';
+    exportNode.style.padding = '0';
+    exportNode.style.position = 'relative';
+    exportNode.style.overflow = 'visible';
+    exportNode.style.fontFamily = 'Inter, Arial, sans-serif';
+    exportNode.style.opacity = '1';
+    exportNode.style.visibility = 'visible';
+
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'fixed';
+    wrapper.style.left = '0';
+    wrapper.style.top = '0';
+    wrapper.style.width = '794px';
+    wrapper.style.height = 'auto';
+    wrapper.style.background = '#ffffff';
+    wrapper.style.zIndex = '2147483647';
+    wrapper.style.opacity = '1';
+    wrapper.style.visibility = 'visible';
+    wrapper.style.pointerEvents = 'none';
+    wrapper.style.overflow = 'visible';
+    wrapper.appendChild(exportNode);
+    document.body.appendChild(wrapper);
+
+    return { wrapper, exportNode };
+}
+
+function prepareCustomerPdfPagination(pdfExport, firstPageMetrics, secondPageMetrics) {
+    const contentRoot = pdfExport.exportNode.querySelector('.resume-export-content > div');
+
+    if (!contentRoot) {
+        return Math.ceil(Math.max(firstPageMetrics.cssPrintableHeightPx, pdfExport.exportNode.scrollHeight));
+    }
+
+    const layout = prepareResumeForPrintLayout(contentRoot, firstPageMetrics, secondPageMetrics);
+    const exportHeight = Math.ceil(Math.max(firstPageMetrics.cssPrintableHeightPx, layout.contentHeightPx));
+    pdfExport.exportNode.style.height = `${exportHeight}px`;
+    return exportHeight;
+}
+
+async function downloadResumePdf(filename) {
+    const pdfExport = buildCustomerPdfExportNode();
+    if (!pdfExport) {
+        console.warn('Could not build PDF export node.');
+        return;
+    }
+
+    try {
+        const { jsPDF } = window.jspdf || {};
+        if (!jsPDF) {
+            throw new Error('jsPDF is not available.');
+        }
+
+        const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const pageMetrics = getA4PdfPageMetrics({
+            contentWidthPx: 794,
+            pageWidthMm: pageWidth,
+            pageHeightMm: pageHeight,
+            bottomMarginMm: 12.7
+        });
+        const secondPageMetrics = getA4PdfPageMetrics({
+            contentWidthPx: 794,
+            pageWidthMm: pageWidth,
+            pageHeightMm: pageHeight,
+            topMarginMm: 12.7,
+            bottomMarginMm: 12.7
+        });
+        const fullHeight = prepareCustomerPdfPagination(pdfExport, pageMetrics, secondPageMetrics);
+        const canvas = await html2canvas(pdfExport.exportNode, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            scrollX: 0,
+            scrollY: 0,
+            width: 794,
+            height: fullHeight,
+            windowWidth: 794,
+            windowHeight: fullHeight
+        });
+
+        const firstPageCanvasHeight = getPdfCanvasPageSliceHeight(canvas.width, pageMetrics);
+        const secondPageCanvasHeight = getPdfCanvasPageSliceHeight(canvas.width, secondPageMetrics);
+        if (canvas.height > firstPageCanvasHeight + secondPageCanvasHeight) {
+            throw new Error('The resume could not be fitted within two pages.');
+        }
+        const totalPages = canvas.height > firstPageCanvasHeight ? 2 : 1;
+        let sourceY = 0;
+
+        for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
+            if (pageIndex > 0) {
+                pdf.addPage();
+            }
+
+            const currentPageMetrics = pageIndex === 0 ? pageMetrics : secondPageMetrics;
+            const pageCanvasHeight = pageIndex === 0 ? firstPageCanvasHeight : secondPageCanvasHeight;
+            const cropHeight = Math.min(pageCanvasHeight, canvas.height - sourceY);
+            const pageCanvas = document.createElement('canvas');
+            pageCanvas.width = canvas.width;
+            pageCanvas.height = cropHeight;
+            const ctx = pageCanvas.getContext('2d');
+            ctx.drawImage(
+                canvas,
+                0,
+                sourceY,
+                canvas.width,
+                cropHeight,
+                0,
+                0,
+                canvas.width,
+                cropHeight
+            );
+
+            const pageImage = pageCanvas.toDataURL('image/png');
+            const imgProps = pdf.getImageProperties(pageImage);
+            const ratio = pageWidth / imgProps.width;
+            const imgWidth = imgProps.width * ratio;
+            const imgHeight = imgProps.height * ratio;
+
+            pdf.addImage(pageImage, 'PNG', 0, currentPageMetrics.topMarginMm, imgWidth, imgHeight, undefined, 'FAST');
+            sourceY += cropHeight;
+        }
+
+        pdf.save(filename);
+    } catch (err) {
+        console.error('PDF download error:', err);
+        showToast('PDF download failed, but your order was saved.', 'warning');
+    } finally {
+        pdfExport.wrapper.remove();
+    }
+}
+
 async function generateOrder() {
     // Honeypot check
     if (document.getElementById('hp-field').value) {
@@ -1047,6 +1215,12 @@ async function generateOrder() {
 
         // Record for rate limiting
         recordOrder();
+
+        // Auto-download resume as PDF
+        btnGenerate.innerHTML = '<div class="spinner"></div> Downloading PDF...';
+        const fullName = resumeData.personalInfo.fullName || 'Resume';
+        const pdfFilename = `${fullName.replace(/[^a-zA-Z0-9\s]/g, '').trim()}_${refId}.pdf`;
+        await downloadResumePdf(pdfFilename);
 
         // Redirect to success page
         window.location.href = `success.html?ref=${refId}`;

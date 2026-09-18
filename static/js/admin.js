@@ -1352,3 +1352,285 @@ if (btnAdminStartScan) {
         }
     });
 }
+
+// ===========================================
+//  DOWNLOAD TEMPLATE FEATURE
+// ===========================================
+const btnDownloadTemplate = document.getElementById('btn-download-template');
+const templatePickerOverlay = document.getElementById('template-picker-overlay');
+const btnCloseTemplatePicker = document.getElementById('btn-close-template-picker');
+const btnDoDownloadTemplate = document.getElementById('btn-do-download-template');
+
+let pickerSelectedTemplate = 'ats_classic';
+let pickerSelectedColor = 'indigo';
+
+// Sample data for blank template
+const sampleResumeData = {
+    personalInfo: {
+        fullName: 'Juan Dela Cruz',
+        email: 'juan.delacruz@email.com',
+        phone: '+63 912 345 6789',
+        location: 'Manila, Philippines',
+        linkedin: 'linkedin.com/in/juandelacruz',
+        website: 'juandelacruz.com',
+        photoUrl: ''
+    },
+    summary: 'Dedicated and results-driven professional with 5+ years of experience in project management and team leadership. Proven track record of delivering projects on time and within budget while maintaining high quality standards.',
+    experience: [
+        {
+            title: 'Senior Project Manager',
+            company: 'ABC Corporation',
+            startDate: 'Jan 2022',
+            endDate: 'Present',
+            description: 'Led cross-functional teams of 10+ members\nManaged project budgets exceeding ₱5M\nImplemented agile methodologies improving delivery speed by 30%'
+        },
+        {
+            title: 'Project Coordinator',
+            company: 'XYZ Solutions Inc.',
+            startDate: 'Jun 2019',
+            endDate: 'Dec 2021',
+            description: 'Coordinated project timelines and resource allocation\nPrepared comprehensive project documentation and reports\nFacilitated stakeholder meetings and status updates'
+        }
+    ],
+    education: [
+        {
+            degree: 'Bachelor of Science in Business Administration',
+            school: 'University of the Philippines',
+            startDate: '2015',
+            endDate: '2019',
+            gpa: '1.5'
+        }
+    ],
+    skills: [
+        { name: 'Project Management' },
+        { name: 'Team Leadership' },
+        { name: 'Microsoft Office' },
+        { name: 'Communication' },
+        { name: 'Problem Solving' },
+        { name: 'Time Management' },
+        { name: 'Data Analysis' },
+        { name: 'Customer Service' }
+    ],
+    projects: [
+        {
+            name: 'Company Website Redesign',
+            description: 'Led the complete redesign of the corporate website, improving user engagement by 45% and reducing bounce rate by 20%.'
+        }
+    ]
+};
+
+const templateNameMap = {
+    'ats_classic': 'ATS_Classic',
+    'canva_modern_1': 'Modern_Two_Column',
+    'canva_creative_2': 'Creative_Banner',
+    'canva_minimal_3': 'Minimal_Elegant',
+    'canva_executive_4': 'Executive_Dark'
+};
+
+if (btnDownloadTemplate) {
+    btnDownloadTemplate.addEventListener('click', () => {
+        pickerSelectedTemplate = 'ats_classic';
+        pickerSelectedColor = 'indigo';
+
+        // Reset card selection
+        document.querySelectorAll('.tpl-pick-card').forEach(c => {
+            c.style.borderColor = c.dataset.tpl === 'ats_classic' ? 'var(--adm-primary)' : 'var(--adm-border)';
+            c.classList.toggle('selected', c.dataset.tpl === 'ats_classic');
+        });
+
+        // Reset color selection
+        document.querySelectorAll('.tpl-color-swatch').forEach(s => {
+            s.style.borderColor = s.dataset.color === 'indigo' ? 'var(--adm-primary)' : 'transparent';
+            s.classList.toggle('selected', s.dataset.color === 'indigo');
+        });
+
+        templatePickerOverlay.classList.remove('hidden');
+    });
+}
+
+if (btnCloseTemplatePicker) {
+    btnCloseTemplatePicker.addEventListener('click', () => {
+        templatePickerOverlay.classList.add('hidden');
+    });
+}
+
+if (templatePickerOverlay) {
+    templatePickerOverlay.addEventListener('click', (e) => {
+        if (e.target === templatePickerOverlay) templatePickerOverlay.classList.add('hidden');
+    });
+}
+
+// Template card selection
+document.querySelectorAll('.tpl-pick-card').forEach(card => {
+    card.addEventListener('click', () => {
+        document.querySelectorAll('.tpl-pick-card').forEach(c => {
+            c.style.borderColor = 'var(--adm-border)';
+            c.classList.remove('selected');
+        });
+        card.style.borderColor = 'var(--adm-primary)';
+        card.classList.add('selected');
+        pickerSelectedTemplate = card.dataset.tpl;
+    });
+});
+
+// Color swatch selection
+document.querySelectorAll('.tpl-color-swatch').forEach(swatch => {
+    swatch.addEventListener('click', () => {
+        document.querySelectorAll('.tpl-color-swatch').forEach(s => {
+            s.style.borderColor = 'transparent';
+            s.classList.remove('selected');
+        });
+        swatch.style.borderColor = 'var(--adm-primary)';
+        swatch.classList.add('selected');
+        pickerSelectedColor = swatch.dataset.color;
+    });
+});
+
+// Download template as PDF
+if (btnDoDownloadTemplate) {
+    btnDoDownloadTemplate.addEventListener('click', async () => {
+        const renderData = {
+            ...sampleResumeData,
+            colorTheme: pickerSelectedColor,
+            photoSize: 100,
+            photoShape: 'circle'
+        };
+
+        const resumeHtml = ResumeTemplates.render(pickerSelectedTemplate, renderData);
+        if (!resumeHtml || !resumeHtml.trim()) {
+            alert('Failed to render template.');
+            return;
+        }
+
+        // Build export node
+        const exportNode = document.createElement('div');
+        exportNode.innerHTML = `
+            <style>
+                * { box-sizing: border-box; }
+                body, html { margin: 0; }
+                div, h1, h2, h3, p, ul, li, section, article {
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
+                }
+                .resume-page-break { page-break-before: always; }
+            </style>
+            <div class="resume-export-content">${resumeHtml}</div>
+        `;
+        exportNode.style.width = '794px';
+        exportNode.style.minHeight = '0';
+        exportNode.style.height = 'auto';
+        exportNode.style.display = 'block';
+        exportNode.style.background = '#ffffff';
+        exportNode.style.boxSizing = 'border-box';
+        exportNode.style.margin = '0';
+        exportNode.style.padding = '0';
+        exportNode.style.position = 'relative';
+        exportNode.style.overflow = 'visible';
+        exportNode.style.fontFamily = 'Inter, Arial, sans-serif';
+        exportNode.style.opacity = '1';
+        exportNode.style.visibility = 'visible';
+
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'fixed';
+        wrapper.style.left = '0';
+        wrapper.style.top = '0';
+        wrapper.style.width = '794px';
+        wrapper.style.height = 'auto';
+        wrapper.style.background = '#ffffff';
+        wrapper.style.zIndex = '2147483647';
+        wrapper.style.opacity = '1';
+        wrapper.style.visibility = 'visible';
+        wrapper.style.pointerEvents = 'none';
+        wrapper.style.overflow = 'visible';
+        wrapper.appendChild(exportNode);
+        document.body.appendChild(wrapper);
+
+        const originalText = btnDoDownloadTemplate.innerHTML;
+        btnDoDownloadTemplate.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
+        btnDoDownloadTemplate.disabled = true;
+
+        try {
+            const { jsPDF } = window.jspdf || {};
+            if (!jsPDF) throw new Error('jsPDF is not available.');
+
+            const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const pageMetrics = getA4PdfPageMetrics({
+                contentWidthPx: 794,
+                pageWidthMm: pageWidth,
+                pageHeightMm: pageHeight,
+                bottomMarginMm: 12.7
+            });
+            const secondPageMetrics = getA4PdfPageMetrics({
+                contentWidthPx: 794,
+                pageWidthMm: pageWidth,
+                pageHeightMm: pageHeight,
+                topMarginMm: 12.7,
+                bottomMarginMm: 12.7
+            });
+
+            // Prepare for pagination
+            const contentRoot = exportNode.querySelector('.resume-export-content > div');
+            let fullHeight;
+            if (contentRoot) {
+                const layout = prepareResumeForPrintLayout(contentRoot, pageMetrics, secondPageMetrics);
+                fullHeight = Math.ceil(Math.max(pageMetrics.cssPrintableHeightPx, layout.contentHeightPx));
+                exportNode.style.height = `${fullHeight}px`;
+            } else {
+                fullHeight = Math.ceil(Math.max(pageMetrics.cssPrintableHeightPx, exportNode.scrollHeight));
+            }
+
+            const canvas = await html2canvas(exportNode, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                scrollX: 0,
+                scrollY: 0,
+                width: 794,
+                height: fullHeight,
+                windowWidth: 794,
+                windowHeight: fullHeight
+            });
+
+            const firstPageCanvasHeight = getPdfCanvasPageSliceHeight(canvas.width, pageMetrics);
+            const secondPageCanvasHeight = getPdfCanvasPageSliceHeight(canvas.width, secondPageMetrics);
+            const totalPages = canvas.height > firstPageCanvasHeight ? 2 : 1;
+            let sourceY = 0;
+
+            for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
+                if (pageIndex > 0) pdf.addPage();
+
+                const currentPageMetrics = pageIndex === 0 ? pageMetrics : secondPageMetrics;
+                const pageCanvasHeight = pageIndex === 0 ? firstPageCanvasHeight : secondPageCanvasHeight;
+                const cropHeight = Math.min(pageCanvasHeight, canvas.height - sourceY);
+                const pageCanvas = document.createElement('canvas');
+                pageCanvas.width = canvas.width;
+                pageCanvas.height = cropHeight;
+                const ctx = pageCanvas.getContext('2d');
+                ctx.drawImage(canvas, 0, sourceY, canvas.width, cropHeight, 0, 0, canvas.width, cropHeight);
+
+                const pageImage = pageCanvas.toDataURL('image/png');
+                const imgProps = pdf.getImageProperties(pageImage);
+                const ratio = pageWidth / imgProps.width;
+                const imgWidth = imgProps.width * ratio;
+                const imgHeight = imgProps.height * ratio;
+
+                pdf.addImage(pageImage, 'PNG', 0, currentPageMetrics.topMarginMm, imgWidth, imgHeight, undefined, 'FAST');
+                sourceY += cropHeight;
+            }
+
+            const tplName = templateNameMap[pickerSelectedTemplate] || 'Template';
+            pdf.save(`Artex_${tplName}_${pickerSelectedColor}.pdf`);
+            templatePickerOverlay.classList.add('hidden');
+
+        } catch (err) {
+            console.error('Template PDF generation error:', err);
+            alert('Failed to generate template PDF.');
+        } finally {
+            btnDoDownloadTemplate.innerHTML = originalText;
+            btnDoDownloadTemplate.disabled = false;
+            wrapper.remove();
+        }
+    });
+}
