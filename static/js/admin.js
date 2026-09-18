@@ -459,7 +459,7 @@ function buildPdfExportNode(order) {
 
     const wrapper = document.createElement('div');
     wrapper.style.position = 'fixed';
-    wrapper.style.left = '0';
+    wrapper.style.left = '-9999px';
     wrapper.style.top = '0';
     wrapper.style.width = '794px';
     wrapper.style.height = 'auto';
@@ -1550,7 +1550,7 @@ if (btnDoDownloadTemplate) {
 
         const wrapper = document.createElement('div');
         wrapper.style.position = 'fixed';
-        wrapper.style.left = '0';
+        wrapper.style.left = '-9999px';
         wrapper.style.top = '0';
         wrapper.style.width = '794px';
         wrapper.style.height = 'auto';

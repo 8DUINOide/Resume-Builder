@@ -2,6 +2,8 @@
 
 A comprehensive, client-side, real-time auto-saving resume generation platform powered by Firebase (Auth & Firestore) and JS-based PDF generation (jsPDF & html2canvas).
 
+**<i class="fa-solid fa-globe"></i> Live Demo:** [https://artex-resume-builder.vercel.app/index.html](https://artex-resume-builder.vercel.app/index.html)
+
 ## <i class="fa-solid fa-building"></i> Features
 
 - **Google Sign-In Authentication** with role-based access (Customer/Admin)
