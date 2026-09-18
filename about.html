@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us — Artex Resume Builder</title>
+    <meta name="description" content="Learn more about Artex Resume Builder and how we help you land your dream job.">
+    <link rel="icon" type="image/jpeg" href="./artex-icon.jpg">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="./static/css/styles.css">
+    
+    <style>
+        body {
+            background-color: #F8FAFC;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            color: #0F172A;
+        }
+        .app-header {
+            background: white;
+            padding: 16px 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 18px;
+            color: #0F172A;
+            text-decoration: none;
+        }
+        .header-brand img {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+        }
+        .header-nav a {
+            color: #64748B;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            margin-left: 24px;
+            transition: color 0.2s;
+        }
+        .header-nav a:hover {
+            color: #4F46E5;
+        }
+        .about-hero {
+            background: linear-gradient(135deg, #4F46E5, #3B82F6);
+            color: white;
+            padding: 80px 24px;
+            text-align: center;
+        }
+        .about-hero h1 {
+            font-size: 48px;
+            font-weight: 800;
+            margin: 0 0 16px;
+            letter-spacing: -1px;
+        }
+        .about-hero p {
+            font-size: 18px;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        .about-content {
+            max-width: 800px;
+            margin: -40px auto 40px;
+            background: white;
+            padding: 48px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+        .about-content h2 {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0 0 16px;
+            color: #0F172A;
+        }
+        .about-content p {
+            color: #475569;
+            line-height: 1.7;
+            margin-bottom: 24px;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+            margin-top: 40px;
+        }
+        .feature-item {
+            text-align: center;
+            padding: 24px;
+            background: #F8FAFC;
+            border-radius: 12px;
+            border: 1px solid #E2E8F0;
+        }
+        .feature-icon {
+            font-size: 32px;
+            color: #4F46E5;
+            margin-bottom: 16px;
+        }
+        .feature-title {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        .feature-desc {
+            font-size: 14px;
+            color: #64748B;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="header-inner">
+            <a href="index.html" class="header-brand">
+                <img src="./artex-icon.jpg" alt="Artex">
+                <span>Artex Resume Builder</span>
+            </a>
+            <nav class="header-nav">
+                <a href="index.html">Home</a>
+                <a href="about.html" style="color:#4F46E5;">About</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="about-hero">
+        <h1>Crafting Your Professional Story</h1>
+        <p>We provide the tools and beautiful designs you need to stand out from the crowd and land the job you deserve.</p>
+    </div>
+
+    <div class="about-content">
+        <h2>Who We Are</h2>
+        <p>At Artex, we believe that everyone deserves a polished, professional resume that accurately represents their skills and experience. Our platform is designed to make resume building as seamless and intuitive as possible, whether you're a seasoned executive or a fresh graduate entering the workforce.</p>
+
+        <h2>Our Mission</h2>
+        <p>Our mission is to bridge the gap between talented individuals and their dream careers by providing accessible, high-quality resume templates and automated tools. We understand that formatting and design can be daunting, which is why we've integrated intelligent AI scanning and beautifully crafted Canva-inspired templates directly into our platform.</p>
+
+        <div class="feature-grid">
+            <div class="feature-item">
+                <div class="feature-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                <div class="feature-title">AI-Powered</div>
+                <div class="feature-desc">Instantly extract and populate data from your old resumes.</div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon"><i class="fa-solid fa-palette"></i></div>
+                <div class="feature-title">Beautiful Templates</div>
+                <div class="feature-desc">Choose from ATS-friendly and creative Canva-style designs.</div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon"><i class="fa-solid fa-file-pdf"></i></div>
+                <div class="feature-title">High-Quality Export</div>
+                <div class="feature-desc">Download pixel-perfect, print-ready PDF resumes.</div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

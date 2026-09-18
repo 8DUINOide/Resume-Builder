@@ -1364,57 +1364,75 @@ const btnDoDownloadTemplate = document.getElementById('btn-do-download-template'
 let pickerSelectedTemplate = 'ats_classic';
 let pickerSelectedColor = 'indigo';
 
-// Sample data for blank template
+// Blank data for template download (bio-data style)
 const sampleResumeData = {
     personalInfo: {
-        fullName: 'Juan Dela Cruz',
-        email: 'juan.delacruz@email.com',
-        phone: '+63 912 345 6789',
-        location: 'Manila, Philippines',
-        linkedin: 'linkedin.com/in/juandelacruz',
-        website: 'juandelacruz.com',
+        fullName: '__________________________________',
+        email: 'Email: ________________________',
+        phone: 'Phone: ________________________',
+        location: 'Address: ________________________',
+        linkedin: 'LinkedIn: ______________________',
+        website: 'Website: _______________________',
         photoUrl: ''
     },
-    summary: 'Dedicated and results-driven professional with 5+ years of experience in project management and team leadership. Proven track record of delivering projects on time and within budget while maintaining high quality standards.',
+    summary: '________________________________________________________________________________\n________________________________________________________________________________\n________________________________________________________________________________\n________________________________________________________________________________',
     experience: [
         {
-            title: 'Senior Project Manager',
-            company: 'ABC Corporation',
-            startDate: 'Jan 2022',
-            endDate: 'Present',
-            description: 'Led cross-functional teams of 10+ members\nManaged project budgets exceeding ₱5M\nImplemented agile methodologies improving delivery speed by 30%'
+            title: 'Job Title: ______________________',
+            company: 'Company: _______________________',
+            startDate: 'Start: __________',
+            endDate: 'End: __________',
+            description: '________________________________________________________________________________\n________________________________________________________________________________\n________________________________________________________________________________'
         },
         {
-            title: 'Project Coordinator',
-            company: 'XYZ Solutions Inc.',
-            startDate: 'Jun 2019',
-            endDate: 'Dec 2021',
-            description: 'Coordinated project timelines and resource allocation\nPrepared comprehensive project documentation and reports\nFacilitated stakeholder meetings and status updates'
+            title: 'Job Title: ______________________',
+            company: 'Company: _______________________',
+            startDate: 'Start: __________',
+            endDate: 'End: __________',
+            description: '________________________________________________________________________________\n________________________________________________________________________________\n________________________________________________________________________________'
+        },
+        {
+            title: 'Job Title: ______________________',
+            company: 'Company: _______________________',
+            startDate: 'Start: __________',
+            endDate: 'End: __________',
+            description: '________________________________________________________________________________\n________________________________________________________________________________\n________________________________________________________________________________'
         }
     ],
     education: [
         {
-            degree: 'Bachelor of Science in Business Administration',
-            school: 'University of the Philippines',
-            startDate: '2015',
-            endDate: '2019',
-            gpa: '1.5'
+            degree: 'Degree/Course: _________________',
+            school: 'School: ________________________',
+            startDate: 'Start: __________',
+            endDate: 'End: __________',
+            gpa: 'GPA: ______'
+        },
+        {
+            degree: 'Degree/Course: _________________',
+            school: 'School: ________________________',
+            startDate: 'Start: __________',
+            endDate: 'End: __________',
+            gpa: 'GPA: ______'
         }
     ],
     skills: [
-        { name: 'Project Management' },
-        { name: 'Team Leadership' },
-        { name: 'Microsoft Office' },
-        { name: 'Communication' },
-        { name: 'Problem Solving' },
-        { name: 'Time Management' },
-        { name: 'Data Analysis' },
-        { name: 'Customer Service' }
+        { name: '____________________' },
+        { name: '____________________' },
+        { name: '____________________' },
+        { name: '____________________' },
+        { name: '____________________' },
+        { name: '____________________' },
+        { name: '____________________' },
+        { name: '____________________' }
     ],
     projects: [
         {
-            name: 'Company Website Redesign',
-            description: 'Led the complete redesign of the corporate website, improving user engagement by 45% and reducing bounce rate by 20%.'
+            name: 'Project Name: __________________',
+            description: '________________________________________________________________________________\n________________________________________________________________________________'
+        },
+        {
+            name: 'Project Name: __________________',
+            description: '________________________________________________________________________________\n________________________________________________________________________________'
         }
     ]
 };
