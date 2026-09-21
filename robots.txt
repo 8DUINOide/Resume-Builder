@@ -1,0 +1,11 @@
+# Artex Resume Builder — robots.txt
+# https://artex-resume-builder.vercel.app
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin.html
+Disallow: /api/
+Disallow: /success.html
+
+Sitemap: https://artex-resume-builder.vercel.app/sitemap.xml
